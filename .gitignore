@@ -429,3 +429,13 @@ FodyWeavers.xsd
 
 # Local planning documents
 plans/
+
+# WXT (browser extension build tool)
+.output
+.wxt
+stats.html
+stats-*.json
+web-ext.config.ts
+logs
+.idea
+.DS_Store

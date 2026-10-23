@@ -1,0 +1,26 @@
+{
+  "name": "atc-soft-json-viewer",
+  "description": "Formats JSON in the current tab with one click. Open source, no tracking, no network access.",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "wxt",
+    "dev:edge": "wxt -b edge",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "@wxt-dev/auto-icons": "1.1.2",
+    "typescript": "5.9.3",
+    "vite": "8.3.5",
+    "web-ext": "10.8.0",
+    "wxt": "0.21.4"
+  }
+}
