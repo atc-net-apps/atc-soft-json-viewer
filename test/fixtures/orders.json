@@ -1,0 +1,62 @@
+{
+  "orderId": "A-1001",
+  "status": "Shipped",
+  "placedAt": "2026-10-23T09:15:00Z",
+  "updatedAt": 1792745700,
+  "total": 249.5,
+  "currency": "DKK",
+  "paid": true,
+  "coupon": null,
+  "ledgerId": 9007199254740993,
+  "customer": {
+    "id": 4711,
+    "name": "Contoso A/S",
+    "email": "orders@contoso.example",
+    "website": "https://contoso.example/about",
+    "address": {
+      "street": "Østergade 12",
+      "city": "København",
+      "country": "DK"
+    }
+  },
+  "items": [
+    {
+      "sku": "A-100",
+      "name": "Widget, large",
+      "quantity": 2,
+      "unitPrice": 99.75,
+      "tags": ["red", "sale"],
+      "image": "https://images.contoso.example/a-100.png"
+    },
+    {
+      "sku": "B-200",
+      "name": "Gadget",
+      "quantity": 1,
+      "unitPrice": 50,
+      "tags": [],
+      "image": null
+    }
+  ],
+  "shipping": {
+    "carrier": "PostNord",
+    "trackingUrl": "https://tracking.example/track?id=PN123456789DK&lang=da",
+    "estimatedDelivery": "2026-10-27T16:00:00+02:00",
+    "events": []
+  },
+  "session": {
+    "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImNvbnRvc28tMjAyNi0xMCJ9.eyJzdWIiOiJjdXN0b21lci00NzExIiwibmFtZSI6IkNvbnRvc28gQS9TIiwic2NvcGUiOiJvcmRlcnMucmVhZCBvcmRlcnMud3JpdGUiLCJpYXQiOjE3OTI3NDU3MDAsImV4cCI6MTc5Mjc0OTMwMH0.ZmFrZS1zaWduYXR1cmUtZm9yLXRlc3Rpbmctb25seQ",
+    "expiresIn": 3600
+  },
+  "metadata": {
+    "content-type": "application/json",
+    "odd key": "has a space",
+    "$ref": "#/components/schemas/Order",
+    "note": "Deliver to <b>reception</b>, not \"the back door\".\nRing twice.",
+    "emoji": "📦✅",
+    "deep": { "level2": { "level3": { "level4": { "level5": "bottom" } } } }
+  },
+  "_links": {
+    "self": { "href": "https://api.contoso.example/orders/A-1001" },
+    "invoice": { "href": "https://api.contoso.example/orders/A-1001/invoice" }
+  }
+}

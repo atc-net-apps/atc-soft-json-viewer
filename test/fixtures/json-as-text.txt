@@ -1,0 +1,4 @@
+[
+  { "id": 1, "name": "Sent as text/plain, but it is valid JSON, so the viewer formats it." },
+  { "id": 2, "name": "Raw files on GitHub (raw.githubusercontent.com) are served like this." }
+]

@@ -1,0 +1,8 @@
+{
+  "orderId": "A-1002",
+  "items": [
+    { "sku": "A-100", "quantity": 2 },
+    { "sku": "B-200", "quantity": 1 },
+  ],
+  "total": 249.5
+}
