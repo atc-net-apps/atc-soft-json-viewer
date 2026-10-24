@@ -1,12 +1,16 @@
 import { detectKind } from './detect';
 import { parseDocument, type ParseResult } from './parse';
+import { renderStatusBar, renderToolbar } from './render/toolbar';
 import { renderTree } from './render/tree';
 import css from './render/viewer.css?inline';
+import { loadSettings, type Settings } from './settings';
 
 export type ToggleResult = 'formatted' | 'restored' | 'not-json';
 
 interface MountedViewer {
   root: ShadowRoot;
+  /** Settles when the viewer's content has been drawn. */
+  ready: Promise<void>;
   restore(): void;
 }
 
@@ -20,7 +24,7 @@ const HOST_ID = 'atc-json-viewer';
  * Formats the page if it is raw JSON, or restores it if it is already formatted.
  * `contentType` is a parameter so tests can simulate any page.
  */
-export function toggleViewer(doc: Document = document, contentType: string = doc.contentType): ToggleResult {
+export async function toggleViewer(doc: Document = document, contentType: string = doc.contentType): Promise<ToggleResult> {
   const viewerGlobal = globalThis as ViewerGlobal;
 
   if (viewerGlobal.__atcJsonViewer) {
@@ -34,7 +38,10 @@ export function toggleViewer(doc: Document = document, contentType: string = doc
     return 'not-json';
   }
 
-  viewerGlobal.__atcJsonViewer = mount(doc, raw);
+  // Mounted (and remembered) before waiting for the settings, so a quick second click still restores.
+  const mounted = mount(doc, raw, contentType);
+  viewerGlobal.__atcJsonViewer = mounted;
+  await mounted.ready;
   return 'formatted';
 }
 
@@ -74,8 +81,7 @@ function findRawJson(doc: Document): RawJson | null {
   return pre ? { text: pre.textContent ?? '', elements } : null;
 }
 
-function mount(doc: Document, raw: RawJson): MountedViewer {
-  const started = performance.now();
+function mount(doc: Document, raw: RawJson, contentType: string): MountedViewer {
   const body = doc.body;
 
   const undo = [...raw.elements.map((element) => setStyle(element, 'display', 'none')), setStyle(body, 'margin', '0')];
@@ -87,22 +93,44 @@ function mount(doc: Document, raw: RawJson): MountedViewer {
   const sheet = new CSSStyleSheet();
   sheet.replaceSync(css);
   root.adoptedStyleSheets = [sheet];
-
-  const result = parseDocument(raw.text);
-  root.append(result.ok ? renderTree(result.value) : renderParseError(result));
   body.append(host);
 
-  if (import.meta.env.DEV) {
-    console.log(`ATC JSON Viewer: formatted ${raw.text.length} characters in ${Math.round(performance.now() - started)} ms`);
-  }
+  const ready = loadSettings().then((settings) => render(host, root, raw.text, contentType, settings));
 
   return {
     root,
+    ready,
     restore() {
       host.remove();
       undo.forEach((restoreStyle) => restoreStyle());
     },
   };
+}
+
+/** Draws the toolbar, the document and the status bar into the viewer's shadow root. */
+function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: string, settings: Settings): void {
+  const started = performance.now();
+
+  // Set through the CSSOM (CSP-safe), read by viewer.css.
+  host.style.setProperty('--font-size', `${settings.fontSize}px`);
+
+  const viewer = document.createElement('div');
+  viewer.className = 'viewer';
+
+  const toolbar = renderToolbar();
+  const content = document.createElement('main');
+  content.className = 'content';
+  const statusBar = renderStatusBar({ contentType, bytes: new Blob([text]).size });
+
+  const result = parseDocument(text);
+  content.append(result.ok ? renderTree(result.value, { expandDepth: settings.unfoldDepth }) : renderParseError(result));
+
+  viewer.append(toolbar.element, content, statusBar.element);
+  root.append(viewer);
+
+  if (import.meta.env.DEV) {
+    console.log(`ATC JSON Viewer: formatted ${text.length} characters in ${Math.round(performance.now() - started)} ms`);
+  }
 }
 
 /** A simple error view: what is wrong and where. */

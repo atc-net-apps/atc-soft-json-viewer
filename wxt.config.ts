@@ -11,7 +11,8 @@ export default defineConfig({
     homepage_url: 'https://github.com/atc-net-apps/atc-soft-json-viewer',
     // activeTab: access to the current tab only after the user clicks the toolbar button or presses the shortcut.
     // scripting: lets the background inject the viewer into that tab.
-    permissions: ['activeTab', 'scripting'],
+    // storage: remembers the user's settings in this browser (no install warning).
+    permissions: ['activeTab', 'scripting', 'storage'],
     action: {
       default_title: 'Format JSON (Alt+Shift+J)',
     },

@@ -7,6 +7,8 @@
 :host {
   --bg: #ffffff;
   --bg-hover: #f5f7f9;
+  --bar-bg: #f5f7f9;
+  --line: #d8dde4;
   --fg: #18202b;
   --muted: #5a6575;
   --accent: #0d6f78;
@@ -26,7 +28,9 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--fg);
-  font: 13px/1.55 ui-monospace, 'Cascadia Code', 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  --font-ui: system-ui, 'Segoe UI', sans-serif;
+
+  font: var(--font-size, 13px)/1.55 ui-monospace, 'Cascadia Code', 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
 }
 
 /* Dark colours: follow the operating system unless the theme is set to light (data-theme). */
@@ -34,6 +38,8 @@
   :host(:not([data-theme='light'])) {
     --bg: #171c23;
     --bg-hover: #1d232c;
+    --bar-bg: #1d232c;
+    --line: #2c343f;
     --fg: #e4e8ee;
     --muted: #9aa4b2;
     --accent: #4fc3c9;
@@ -52,6 +58,8 @@
 :host([data-theme='dark']) {
   --bg: #171c23;
   --bg-hover: #1d232c;
+  --bar-bg: #1d232c;
+  --line: #2c343f;
   --fg: #e4e8ee;
   --muted: #9aa4b2;
   --accent: #4fc3c9;
@@ -70,6 +78,67 @@
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+/* ---------- Frame: toolbar, content, status bar ---------- */
+
+.viewer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bar-bg);
+  font: 12px/1.4 var(--font-ui);
+}
+
+.brand {
+  margin-right: auto;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Groups stay hidden until a feature puts a control in them. */
+.toolbar-group:empty {
+  display: none;
+}
+
+.content {
+  flex: 1;
+}
+
+.status-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 16px;
+  padding: 4px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--bar-bg);
+  color: var(--muted);
+  font: 12px/1.4 var(--font-ui);
+}
+
+.status-path {
+  margin-left: auto;
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
+  overflow-wrap: anywhere;
 }
 
 /* ---------- Tree ---------- */

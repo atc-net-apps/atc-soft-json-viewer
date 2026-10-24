@@ -9,12 +9,14 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - 🔢 **Exact big numbers**: IDs beyond JavaScript's safe range are shown exactly as sent
 - ⚠️ **Invalid JSON pointer**: broken JSON shows what is wrong and where (line and column)
 - ⚡ **Large responses**: only what you unfold is drawn, and big arrays are shown 500 items at a time
+- 📊 **Status bar**: shows the response's content type and size
+- 💾 **Remembers your settings**: stored in this browser only
 
 **Privacy & security**
 
 - 🖱️ **Runs only when you click**: nothing happens on any page until you press the toolbar button
 - 🔒 **No network access**: the extension never sends anything anywhere
-- 🧱 **Minimal permissions**: `activeTab` and `scripting`, with no install warning
+- 🧱 **Minimal permissions**: `activeTab`, `scripting` and `storage`, with no install warning
 - 📖 **Open source**: every line is in this repository
 
 > **Status:** in development. Not yet available in the Chrome Web Store or Edge Add-ons; [install it from source](#install-from-source) in the meantime.
@@ -69,6 +71,12 @@ JavaScript can only represent integers up to 9 007 199 254 740 991 exactly. Larg
 ### ⚠️ Invalid JSON pointer
 
 If the page claims to be JSON but isn't valid, the viewer explains the problem in plain English and gives the line and column, for example *"Line 5, column 38: Trailing comma: remove the last ","."*
+
+### 📊 Status bar and settings
+
+A toolbar runs along the top of the viewer and a status bar along the bottom, showing the content type the server sent (for example `application/json`) and the size of the response.
+
+Your viewer settings, such as how many levels are unfolded when a page is formatted (2 by default), are remembered in this browser with `chrome.storage.local`. They never leave your computer, and no page content is ever stored.
 
 ### ⚡ Large responses
 
