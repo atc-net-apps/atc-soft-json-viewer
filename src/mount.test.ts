@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { getMountedRoot, toggleViewer } from './mount';
-import { saveSettings } from './settings';
+import { loadSettings, saveSettings } from './settings';
 
 const JSON_PAGE = '<pre>{"orderId": "A-1001", "customer": {"address": {"city": "Aarhus"}}}</pre><div class="json-formatter-container"></div>';
 
@@ -64,6 +64,54 @@ describe('toggleViewer', () => {
 
     expect(getMountedRoot()?.querySelector('.row[data-path="$.customer.address.city"]')).not.toBeNull();
     expect(document.getElementById('atc-json-viewer')?.style.getPropertyValue('--font-size')).toBe('16px');
+  });
+
+  describe('Raw / Tree toggle', () => {
+    const RAW = '{"b":1,   "a": [1,2]}';
+    const pressed = () => getMountedRoot()?.querySelector('.toolbar-view [aria-pressed="true"]')?.textContent;
+    const visible = (view: string) => {
+      const element = getMountedRoot()?.querySelector<HTMLElement>(`[data-view="${view}"]`);
+      return element ? !element.hidden : false;
+    };
+
+    it('starts in the tree and builds the raw view only when it is first shown', async () => {
+      page(`<pre>${RAW}</pre>`);
+      await toggleViewer(document, 'application/json');
+
+      expect(pressed()).toBe('Tree');
+      expect(visible('tree')).toBe(true);
+      expect(getMountedRoot()?.querySelector('[data-view="raw"]')).toBeNull();
+    });
+
+    it('shows the text exactly as sent, and remembers the choice', async () => {
+      page(`<pre>${RAW}</pre>`);
+      await toggleViewer(document, 'application/json');
+
+      getMountedRoot()?.querySelector<HTMLButtonElement>('.toolbar-view [data-value="raw"]')?.click();
+
+      expect(pressed()).toBe('Raw');
+      expect(visible('raw')).toBe(true);
+      expect(visible('tree')).toBe(false);
+      expect(getMountedRoot()?.querySelector('.raw')?.textContent).toBe(RAW);
+      await vi.waitFor(async () => expect((await loadSettings()).view).toBe('raw'));
+    });
+
+    it('opens in the raw view when that was the last choice', async () => {
+      await saveSettings({ view: 'raw' });
+      page(`<pre>${RAW}</pre>`);
+      await toggleViewer(document, 'application/json');
+
+      expect(pressed()).toBe('Raw');
+      expect(visible('raw')).toBe(true);
+    });
+
+    it('shows broken JSON as raw text too', async () => {
+      page('<pre>{"a": 1,}</pre>');
+      await toggleViewer(document, 'application/json');
+
+      getMountedRoot()?.querySelector<HTMLButtonElement>('.toolbar-view [data-value="raw"]')?.click();
+      expect(getMountedRoot()?.querySelector('.raw')?.textContent).toBe('{"a": 1,}');
+    });
   });
 
   it('restores the page exactly on the second click', async () => {

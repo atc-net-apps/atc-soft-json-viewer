@@ -5,6 +5,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 **Viewing**
 
 - 🌳 **Collapsible tree**: fold and unfold any object or array
+- 📄 **Raw / Tree toggle**: switch to the exact text the server sent, and back
 - 🎨 **Syntax colours**: light and dark, following your system theme
 - 🔢 **Exact big numbers**: IDs beyond JavaScript's safe range are shown exactly as sent
 - ⚠️ **Invalid JSON pointer**: broken JSON shows what is wrong and where (line and column)
@@ -59,6 +60,10 @@ You can change the shortcut at `chrome://extensions/shortcuts` (or `edge://exten
 ### 🌳 Collapsible tree
 
 Objects and arrays fold and unfold with the ▸ / ▾ arrow. The top level is unfolded when the page is formatted. The tree reads like JSON: keys in quotes, commas between entries, and escapes such as `\n` shown as written.
+
+### 📄 Raw / Tree toggle
+
+The **Tree | Raw** switch in the toolbar shows the response exactly as the server sent it: nothing reformatted, reordered or rounded. It works for broken JSON too. The viewer remembers your choice, so if you prefer Raw, the next page opens in Raw. To get the browser's own page back instead, click the toolbar icon again.
 
 ### 🎨 Light and dark
 

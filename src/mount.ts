@@ -1,9 +1,11 @@
 import { detectKind } from './detect';
 import { parseDocument, type ParseResult } from './parse';
+import { renderSegmented } from './render/controls';
 import { renderStatusBar, renderToolbar } from './render/toolbar';
 import { renderTree } from './render/tree';
 import css from './render/viewer.css?inline';
-import { loadSettings, type Settings } from './settings';
+import { createViews, renderRaw } from './render/views';
+import { loadSettings, saveSettings, type Settings } from './settings';
 
 export type ToggleResult = 'formatted' | 'restored' | 'not-json';
 
@@ -123,7 +125,28 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
   const statusBar = renderStatusBar({ contentType, bytes: new Blob([text]).size });
 
   const result = parseDocument(text);
-  content.append(result.ok ? renderTree(result.value, { expandDepth: settings.unfoldDepth }) : renderParseError(result));
+  const views = createViews(content, {
+    tree: () => (result.ok ? renderTree(result.value, { expandDepth: settings.unfoldDepth }) : renderParseError(result)),
+    raw: () => renderRaw(text),
+  });
+
+  // A stored 'table' view falls back to the tree until the table view exists.
+  const initialView = settings.view === 'raw' ? 'raw' : 'tree';
+  views.show(initialView);
+  const viewSwitch = renderSegmented(
+    'View',
+    [
+      { value: 'tree', label: 'Tree', title: 'Formatted, collapsible view' },
+      { value: 'raw', label: 'Raw', title: 'Exactly what the server sent' },
+    ],
+    initialView,
+    (view) => {
+      views.show(view);
+      // Remembered for the next page; failing to save must not break the viewer.
+      saveSettings({ view }).catch(() => {});
+    },
+  );
+  toolbar.slots.view.append(viewSwitch.element);
 
   viewer.append(toolbar.element, content, statusBar.element);
   root.append(viewer);
