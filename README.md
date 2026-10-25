@@ -308,7 +308,7 @@ export default defineWebExtConfig({
 | `npm run dev` | Development build in a fresh Chrome window, rebuilt on every save |
 | `npm run dev:edge` | The same in Edge (needs `web-ext.config.ts`, see above) |
 | `npm run build` | Release build in `.output/chrome-mv3/` (the same build is used for Chrome and Edge) |
-| `npm run zip` | Packs the release build into a `.zip` for the stores |
+| `npm run zip` | Packs the release build into a `.zip` for the stores and GitHub Releases |
 | `npm run compile` | TypeScript type check |
 | `npm test` | Unit tests (Vitest) |
 | `npm run check:security` | Checks the release build: no network access, exactly three permissions (see [Security checks](#security-checks)) |

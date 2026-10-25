@@ -57,7 +57,8 @@ This policy does **not** cover the viewer inside a web page: `viewer.js` runs in
    - lacks the policy for its own pages;
    - contains a file Chrome would refuse to load.
 
-3. **Look at the installed extension.** In `chrome://extensions` (or `edge://extensions`), **Details** lists its permissions. **Inspect views: service worker** opens DevTools, where the **Network** tab stays empty while you use it.
+3. **Check the automated builds.** GitHub Actions runs the unit tests and `check:security` on every push, and the results are public under the repository's **Actions** tab. The zip attached to each [GitHub Release](https://github.com/atc-net-apps/atc-soft-json-viewer/releases) is built from that release's tag, and only after the tests and checks pass again.
+4. **Look at the installed extension.** In `chrome://extensions` (or `edge://extensions`), **Details** lists its permissions. **Inspect views: service worker** opens DevTools, where the **Network** tab stays empty while you use it.
 
 ## Reporting a vulnerability
 
