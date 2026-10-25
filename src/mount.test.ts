@@ -206,6 +206,146 @@ describe('toggleViewer', () => {
     });
   });
 
+  describe('table view', () => {
+    const TABLE_PAGE =
+      '<pre>{"orderId": "A-1001", "items": [{"sku": "A-100", "size": {"w": 2}}, {"sku": "B-200"}], "customer": {"contacts": [{"name": "Ann"}]}}</pre>';
+    const root = () => getMountedRoot() as ShadowRoot;
+    const showTable = () => root().querySelector<HTMLButtonElement>('.toolbar-view [data-value="table"]')?.click();
+    const caption = () => root().querySelector('[data-view="table"] caption')?.textContent;
+
+    it('shows the first list of objects as a table, and remembers the choice', async () => {
+      page(TABLE_PAGE);
+      await toggleViewer(document, 'application/json');
+
+      showTable();
+
+      expect(caption()).toBe('$ › items · 2 rows · 2 columns');
+      expect(root().querySelector<HTMLElement>('.toolbar-search')?.hidden).toBe(true);
+      await vi.waitFor(async () => expect((await loadSettings()).view).toBe('table'));
+    });
+
+    it('opens in the table view when that was the last choice', async () => {
+      await saveSettings({ view: 'table' });
+      page(TABLE_PAGE);
+      await toggleViewer(document, 'application/json');
+
+      expect(root().querySelector('.toolbar-view [aria-pressed="true"]')?.textContent).toBe('Table');
+      expect(caption()).toBe('$ › items · 2 rows · 2 columns');
+    });
+
+    it('shows the table inside the selected line', async () => {
+      page(TABLE_PAGE);
+      await toggleViewer(document, 'application/json');
+
+      root().querySelector<HTMLElement>('.row[data-path="$.customer"]')?.click();
+      showTable();
+
+      expect(caption()).toBe('$ › customer › contacts · 1 row · 1 column');
+    });
+
+    it('opens an object from a cell in the tree and selects it', async () => {
+      page(TABLE_PAGE);
+      await toggleViewer(document, 'application/json');
+      showTable();
+
+      Array.from(root().querySelectorAll<HTMLButtonElement>('.cell-open'))
+        .find((button) => button.textContent === '{1 key}')
+        ?.click();
+
+      expect(root().querySelector('.toolbar-view [aria-pressed="true"]')?.textContent).toBe('Tree');
+      expect(root().querySelector<HTMLElement>('[data-view="tree"]')?.hidden).toBe(false);
+      expect(root().querySelector('.row.selected')?.getAttribute('data-path')).toBe('$.items[0].size');
+      expect(root().querySelector('.status-path')?.textContent).toBe('$.items[0].size');
+    });
+
+    it('says so when the selected line has no table and shows the first one in the document', async () => {
+      page(TABLE_PAGE);
+      await toggleViewer(document, 'application/json');
+
+      root().querySelector<HTMLElement>('.row[data-path="$.orderId"]')?.click();
+      showTable();
+
+      expect(root().querySelector('.table-note')?.textContent).toContain('Nothing to show as a table in $.orderId');
+      expect(caption()).toBe('$ › items · 2 rows · 2 columns');
+    });
+
+    describe('going into and out of lists', () => {
+      const ORDERS_PAGE =
+        '<pre>{"orders": [{"id": "A-1", "items": [{"sku": "X-1"}, {"sku": "X-2"}]}, {"id": "A-2", "items": [{"sku": "X-3"}]}]}</pre>';
+      const button = (label: string) =>
+        Array.from(root().querySelectorAll<HTMLButtonElement>('[data-view="table"] .cell-open')).find(
+          (candidate) => candidate.textContent === label,
+        );
+      const backToTable = () => root().querySelector<HTMLButtonElement>('.back-to-table');
+
+      it('opens a list of objects in a cell as the table, and goes back up from the caption', async () => {
+        page(ORDERS_PAGE);
+        await toggleViewer(document, 'application/json');
+        showTable();
+
+        button('[2 items]')?.click();
+        expect(caption()).toBe('$ › orders › [0] › items · 2 rows · 1 column');
+        expect(root().querySelector('.toolbar-view [aria-pressed="true"]')?.textContent).toBe('Table');
+
+        button('orders')?.click();
+        expect(caption()).toBe('$ › orders · 2 rows · 2 columns');
+      });
+
+      it('goes back to the same table from the tree', async () => {
+        page(ORDERS_PAGE);
+        await toggleViewer(document, 'application/json');
+        showTable();
+        button('[2 items]')?.click();
+
+        button('1')?.click();
+        expect(root().querySelector('.row.selected')?.getAttribute('data-path')).toBe('$.orders[0].items[1]');
+        expect(backToTable()?.hidden).toBe(false);
+
+        backToTable()?.click();
+        expect(root().querySelector('.toolbar-view [aria-pressed="true"]')?.textContent).toBe('Table');
+        expect(caption()).toBe('$ › orders › [0] › items · 2 rows · 1 column');
+        expect(backToTable()?.hidden).toBe(true);
+      });
+
+      it('hides Back to table when another view is chosen', async () => {
+        page(ORDERS_PAGE);
+        await toggleViewer(document, 'application/json');
+        showTable();
+        button('0')?.click();
+        expect(backToTable()?.hidden).toBe(false);
+
+        root().querySelector<HTMLButtonElement>('.toolbar-view [data-value="raw"]')?.click();
+        expect(backToTable()?.hidden).toBe(true);
+      });
+
+      it('looks the table up again when a different line is selected in the tree', async () => {
+        page(ORDERS_PAGE);
+        await toggleViewer(document, 'application/json');
+        showTable();
+        button('0')?.click();
+
+        root().querySelector<HTMLElement>('.row[data-path="$.orders[1]"]')?.click();
+        showTable();
+
+        expect(caption()).toBe('$ › orders › [1] › items · 1 row · 1 column');
+      });
+    });
+
+    it('explains when there is no table', async () => {
+      page('<pre>{"a": [1, 2]}</pre>');
+      await toggleViewer(document, 'application/json');
+      showTable();
+      expect(root().querySelector('.table-empty')?.textContent).toContain('No table here');
+    });
+
+    it('shows the error for broken JSON', async () => {
+      page('<pre>{"a": 1,}</pre>');
+      await toggleViewer(document, 'application/json');
+      showTable();
+      expect(root().querySelector('[data-view="table"] .parse-error')).not.toBeNull();
+    });
+  });
+
   describe('copy value and path', () => {
     const root = () => getMountedRoot() as ShadowRoot;
     const pathText = () => root().querySelector('.status-path')?.textContent;

@@ -455,6 +455,130 @@ mark.current {
   cursor: pointer;
 }
 
+/* ---------- Table view ---------- */
+
+.table-view {
+  padding: 12px 16px 48px;
+}
+
+/* Wide tables scroll sideways inside the view, not the whole page. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.json-table {
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.json-table caption {
+  padding-bottom: 8px;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  text-align: left;
+}
+
+.table-path {
+  color: var(--fg);
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
+}
+
+/* In "$ › orders › [0] › items", only the lists you can go back up to are buttons. */
+.table-path-step,
+.table-path-separator {
+  color: var(--muted);
+}
+
+.table-path-current {
+  font-weight: 600;
+}
+
+.json-table th,
+.json-table td {
+  padding: 3px 12px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.json-table th {
+  background: var(--bar-bg);
+  color: var(--syntax-key);
+  font-weight: 600;
+}
+
+.json-table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.json-table .index {
+  color: var(--muted);
+  text-align: right;
+}
+
+/* A key this row doesn't have, unlike others. */
+.json-table td.missing {
+  background: repeating-linear-gradient(135deg, transparent 0 6px, var(--bg-hover) 6px 12px);
+}
+
+/* Row numbers and {n keys} / [n items]: open in the tree. */
+.cell-open {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.json-table .index .cell-open {
+  color: var(--muted);
+}
+
+.cell-open:hover {
+  color: var(--accent);
+  text-decoration-color: currentColor;
+}
+
+.cell-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+/* "Nothing to show as a table in $.shipping, so this is the first list in the document." */
+.table-note {
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  font-family: var(--font-ui);
+}
+
+.table-note code {
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
+}
+
+.table-view > .more {
+  margin-top: 8px;
+}
+
+.table-empty {
+  margin: 16px;
+  font-family: var(--font-ui);
+}
+
+.table-empty p {
+  margin: 4px 0;
+}
+
+.table-empty-title {
+  font-weight: 600;
+}
+
 /* ---------- Invalid JSON ---------- */
 
 .parse-error {

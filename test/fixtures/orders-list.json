@@ -1,0 +1,31 @@
+{
+  "page": 1,
+  "pageSize": 3,
+  "customer": { "id": 4711, "name": "Contoso A/S" },
+  "orders": [
+    {
+      "orderId": "A-1001",
+      "status": "Shipped",
+      "total": 249.5,
+      "items": [
+        { "sku": "A-100", "name": "Widget, large", "quantity": 2 },
+        { "sku": "B-200", "name": "Gadget", "quantity": 1 }
+      ],
+      "shipping": { "carrier": "PostNord", "trackingUrl": "https://tracking.example/track?id=PN123456789DK" }
+    },
+    {
+      "orderId": "A-1002",
+      "status": "Processing",
+      "total": 75,
+      "items": [{ "sku": "C-300", "name": "Gizmo", "quantity": 3, "giftWrap": true }],
+      "shipping": null
+    },
+    {
+      "orderId": "A-1003",
+      "status": "Cancelled",
+      "total": 0,
+      "items": [],
+      "note": "Cancelled by the customer"
+    }
+  ]
+}

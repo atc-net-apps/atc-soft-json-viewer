@@ -9,6 +9,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - ⏬ **Unfold everything inside**: open one object or array all the way down with ⇊ or Alt+click
 - 🔍 **Search**: highlight matching keys and values, unfold where they are, and step through them with Enter
 - 📄 **Raw / Tree toggle**: switch to the exact text the server sent, and back
+- 📑 **Table view**: see a list of objects as rows and columns
 - 📋 **Copy value & path**: click any line to see its JSON path, and copy the path or the value
 - 🔗 **Clickable links**: web addresses in values open in a new tab
 - 🔢 **Item counts**: every object and array shows how many keys or items it has
@@ -89,7 +90,20 @@ The search covers the whole response, including the parts that aren't drawn yet,
 
 ### 📄 Raw / Tree toggle
 
-The **Tree | Raw** switch in the toolbar shows the response exactly as the server sent it: nothing reformatted, reordered or rounded. It works for broken JSON too. The viewer remembers your choice, so if you prefer Raw, the next page opens in Raw. To get the browser's own page back instead, click the toolbar icon again.
+The **Raw** button in the toolbar's **Tree | Table | Raw** switch shows the response exactly as the server sent it: nothing reformatted, reordered or rounded. It works for broken JSON too. The viewer remembers your choice, so if you prefer Raw, the next page opens in Raw. To get the browser's own page back instead, click the toolbar icon again.
+
+### 📑 Table view
+
+**Table** shows a list of objects, such as the orders or items in a response, as a table: a **#** column, then one column per key, in the order the keys first appear. The caption says which list it is, for example `$ › items · 2 rows · 6 columns`.
+
+- Which list: the first one found inside the line you selected in the tree. If you selected a value inside a list, that list is shown. With nothing selected, it is the list nearest the top of the response. If there is nothing in or around the selected line, the first list in the response is shown, with a note saying so.
+- Values use the tree's colours. Text is shown without quotes, and web addresses are links.
+- Objects and arrays show their size, such as **{2 keys}** or **[3 items]**. A list of objects, such as an order's items, opens as the table when you click it. Click a link in the caption, such as `orders` in `$ › orders › [0] › items`, to go back up to that list.
+- Click a row number, an object or a list of plain values to open it in the tree, selected and ready to copy. **← Back to table** then takes you back to the same table.
+- A striped cell means that row doesn't have that key.
+- Big lists show 500 rows at a time, with a **Show more** button.
+
+The viewer remembers if you prefer the table, like it does for Raw.
 
 ### 📋 Copy value & path
 
@@ -196,6 +210,7 @@ This starts a small local server at <http://localhost:5179/> that serves the fil
 | File | Sent as | What to check |
 |---|---|---|
 | `orders.json` | `application/json` | Nesting, odd keys, `ledgerId` ends in …993, HTML in a string shows as text |
+| `orders-list.json` | `application/json` | Table view: the list of orders, or one order's items when that order is selected |
 | `orders.strict-csp.json` | `application/json` with a strict Content-Security-Policy | Looks exactly like `orders.json` |
 | `error.problem.json` | `application/problem+json` | An API error response is formatted |
 | `broken.json` | `application/json` | Shows "Line 5, column 38: Trailing comma …" |

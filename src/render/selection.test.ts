@@ -5,9 +5,9 @@ import { renderTree } from './tree';
 function setup() {
   const tree = renderTree({ a: 1, b: { c: 2 }, site: 'https://contoso.example' }, { expandDepth: 2 });
   const onSelect = vi.fn();
-  enableSelection(tree, onSelect);
+  const selection = enableSelection(tree, onSelect);
   const row = (path: string) => tree.querySelector<HTMLElement>(`.row[data-path="${path}"]`) as HTMLElement;
-  return { tree, onSelect, row };
+  return { tree, onSelect, row, selection };
 }
 
 describe('enableSelection', () => {
@@ -18,6 +18,16 @@ describe('enableSelection', () => {
 
     expect(row('$.a').classList.contains('selected')).toBe(true);
     expect(onSelect).toHaveBeenCalledWith(row('$.a'));
+  });
+
+  it('selects a line from code, as if it was clicked', () => {
+    const { tree, onSelect, row, selection } = setup();
+    row('$.a').click();
+
+    selection.select(row('$.b.c'));
+
+    expect(tree.querySelectorAll('.row.selected')).toHaveLength(1);
+    expect(onSelect).toHaveBeenLastCalledWith(row('$.b.c'));
   });
 
   it('keeps only one line selected', () => {

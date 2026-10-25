@@ -1,17 +1,21 @@
 import { copyText, valueToText } from './copy';
 import { detectKind } from './detect';
 import { parseDocument } from './parse';
+import { ROOT_PATH } from './path';
 import { renderSegmented } from './render/controls';
 import { renderParseError } from './render/error';
 import { renderLevelButtons } from './render/levels';
 import { renderSearch } from './render/search';
-import { enableSelection } from './render/selection';
+import { enableSelection, type Selection } from './render/selection';
+import { renderNoTable, renderTable } from './render/table';
 import { renderThemeButton } from './render/theme';
 import { renderStatusBar, renderToolbar } from './render/toolbar';
-import { expandToLevel, getRowValue, renderTree } from './render/tree';
+import { expandToLevel, getRowKeys, getRowValue, renderTree, revealPath } from './render/tree';
 import css from './render/viewer.css?inline';
 import { createViews, renderRaw } from './render/views';
+import type { Key } from './search';
 import { loadSettings, saveSettings, type Settings } from './settings';
+import { findTable } from './table';
 
 export type ToggleResult = 'formatted' | 'restored' | 'not-json';
 
@@ -139,6 +143,11 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
   });
 
   const result = parseDocument(text);
+  let selection: Selection | null = null;
+  const tableView = document.createElement('div');
+  // The path the table was last looked up from, so it is only looked up again when the selection changes.
+  let tableFrom: string | null = null;
+
   const views = createViews(content, {
     tree: () => {
       if (!result.ok) {
@@ -149,37 +158,97 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
         links: settings.links,
         counts: settings.counts,
       });
-      enableSelection(tree, (row) => {
+      selection = enableSelection(tree, (row) => {
         selected = row;
         statusBar.setPath(row.dataset.path ?? null);
       });
       return tree;
     },
+    table: () => tableView,
     raw: () => renderRaw(text),
   });
 
-  // A stored 'table' view falls back to the tree until the table view exists.
-  const initialView = settings.view === 'raw' ? 'raw' : 'tree';
-  views.show(initialView);
-  const viewSwitch = renderSegmented(
+  /**
+   * Shows the table at, inside or around the selected line, or in the whole document if nothing is
+   * selected. Kept as it is (including where you went in it) until a different line is selected.
+   */
+  function refreshTable(): void {
+    const from = selected?.dataset.path ?? ROOT_PATH;
+    if (from === tableFrom) {
+      return;
+    }
+    tableFrom = from;
+    if (!result.ok) {
+      tableView.replaceChildren(renderParseError(text, result));
+      return;
+    }
+    drawTable(selected ? getRowKeys(selected) : [], from);
+  }
+
+  function drawTable(start: Key[], from?: string): void {
+    if (!result.ok) {
+      return;
+    }
+    const table = findTable(result.value, start);
+    tableView.replaceChildren(
+      table
+        ? renderTable(table, { links: settings.links, onOpen: openInTree, onTable: (keys) => drawTable(keys), from })
+        : renderNoTable(),
+    );
+  }
+
+  /** From a table: switches to the tree and selects the row, or the object or array in a cell. */
+  function openInTree(keys: Key[]): void {
+    showView('tree');
+    const row = tree && revealPath(tree, keys);
+    if (row && selection) {
+      selection.select(row);
+      // Selected from the table, so going back shows the same table, not one looked up from this line.
+      tableFrom = row.dataset.path ?? null;
+      row.scrollIntoView?.({ block: 'center' });
+    }
+    backToTable.hidden = false;
+  }
+
+  // Shown in the tree after opening something from the table.
+  const backToTable = document.createElement('button');
+  backToTable.type = 'button';
+  backToTable.className = 'button back-to-table';
+  backToTable.textContent = '← Back to table';
+  backToTable.title = 'Back to the table you came from';
+  backToTable.hidden = true;
+  backToTable.addEventListener('click', () => showView('table'));
+
+  function showView(view: Settings['view']): void {
+    backToTable.hidden = true;
+    if (view === 'table') {
+      refreshTable();
+    }
+    views.show(view);
+    viewSwitch.setSelected(view);
+    // Only the tree can be searched and unfolded.
+    toolbar.slots.search.hidden = toolbar.slots.levels.hidden = view !== 'tree';
+    // The selected path only means something in the tree.
+    statusBar.setPath(view === 'tree' && selected ? (selected.dataset.path ?? null) : null);
+  }
+
+  const viewSwitch = renderSegmented<Settings['view']>(
     'View',
     [
       { value: 'tree', label: 'Tree', title: 'Formatted, collapsible view' },
+      { value: 'table', label: 'Table', title: 'A list of objects as rows and columns' },
       { value: 'raw', label: 'Raw', title: 'Exactly what the server sent' },
     ],
-    initialView,
+    settings.view,
     (view) => {
-      views.show(view);
-      toolbar.slots.search.hidden = toolbar.slots.levels.hidden = view !== 'tree';
-      // The selected path only means something in the tree.
-      statusBar.setPath(view === 'tree' && selected ? (selected.dataset.path ?? null) : null);
+      showView(view);
       // Remembered for the next page; failing to save must not break the viewer.
       saveSettings({ view }).catch(() => {});
     },
   );
-  toolbar.slots.view.append(viewSwitch.element);
+  toolbar.slots.view.append(viewSwitch.element, backToTable);
 
-  // Only a tree can be searched and unfolded: none for broken JSON, and hidden in the raw view.
+  // None for broken JSON, which has nothing to search or unfold.
   if (result.ok) {
     toolbar.slots.search.append(renderSearch(() => tree, result.value));
     toolbar.slots.levels.append(
@@ -189,8 +258,8 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
         }
       }),
     );
-    toolbar.slots.search.hidden = toolbar.slots.levels.hidden = initialView !== 'tree';
   }
+  showView(settings.view);
 
   toolbar.slots.actions.append(
     renderThemeButton(host, settings.theme, (theme) => {

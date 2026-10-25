@@ -116,6 +116,30 @@ export function getRowValue(row: Element): unknown {
   return rowValues.get(row);
 }
 
+/**
+ * The keys from the root down to a line's entry, worked out from where the line sits in the tree:
+ * each entry's position among its siblings is its position in the parent's `entries`.
+ */
+export function getRowKeys(row: Element): Key[] {
+  const keys: Key[] = [];
+  let entry: Element | null = row.classList.contains('branch-head') ? row.parentElement : row;
+  while (entry?.parentElement?.classList.contains('children')) {
+    const branchElement = entry.parentElement.parentElement;
+    const branch = branchElement && branches.get(branchElement);
+    if (!branchElement || !branch) {
+      break;
+    }
+    const index = Array.prototype.indexOf.call(entry.parentElement.children, entry);
+    const key = entriesOf(branch)[index]?.[0];
+    if (key === undefined) {
+      break;
+    }
+    keys.unshift(key);
+    entry = branchElement;
+  }
+  return keys;
+}
+
 /** Folds or unfolds a branch (a `.branch` element), building its children the first time. */
 export function setExpanded(branchElement: Element, expanded: boolean): void {
   const branch = branches.get(branchElement);

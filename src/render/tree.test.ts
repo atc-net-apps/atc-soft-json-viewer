@@ -3,6 +3,7 @@ import { BigNumber } from '../parse';
 import {
   countLabel,
   expandToLevel,
+  getRowKeys,
   getRowValue,
   isWebUrl,
   renderTree,
@@ -510,6 +511,22 @@ describe('isWebUrl', () => {
 
   it.each(['ftp://files.example', 'javascript:alert(1)', 'https://'])('rejects %s', (text) => {
     expect(isWebUrl(text)).toBe(false);
+  });
+});
+
+describe('getRowKeys', () => {
+  it('gives the keys from the root down to a line', () => {
+    const tree = renderTree({ items: [{ sku: 'A-1' }, { sku: 'B-2' }] }, { expandDepth: 3 });
+
+    expect(getRowKeys(row(tree, '$.items[1].sku') as HTMLElement)).toEqual(['items', 1, 'sku']);
+    expect(getRowKeys(row(tree, '$.items[1]') as HTMLElement)).toEqual(['items', 1]);
+    expect(getRowKeys(row(tree, '$') as HTMLElement)).toEqual([]);
+  });
+
+  it('gives the keys of lines drawn by "Show more"', () => {
+    const tree = renderTree(Array.from({ length: 700 }, (_, i) => i), { pageSize: 500 });
+    tree.querySelector<HTMLButtonElement>('.more')?.click();
+    expect(getRowKeys(row(tree, '$[650]') as HTMLElement)).toEqual([650]);
   });
 });
 
