@@ -114,6 +114,42 @@ describe('toggleViewer', () => {
     });
   });
 
+  describe('theme', () => {
+    const host = () => document.getElementById('atc-json-viewer');
+    const themeButton = () =>
+      [...(getMountedRoot()?.querySelectorAll<HTMLButtonElement>('.toolbar-actions .button') ?? [])].find((b) =>
+        b.textContent?.startsWith('Theme:'),
+      );
+
+    it('follows the system by default', async () => {
+      page('<pre>{"a": 1}</pre>');
+      await toggleViewer(document, 'application/json');
+
+      expect(themeButton()?.textContent).toBe('Theme: System');
+      expect(host()?.hasAttribute('data-theme')).toBe(false);
+    });
+
+    it('applies and remembers the chosen theme', async () => {
+      page('<pre>{"a": 1}</pre>');
+      await toggleViewer(document, 'application/json');
+
+      themeButton()?.click();
+      themeButton()?.click();
+
+      expect(host()?.getAttribute('data-theme')).toBe('dark');
+      await vi.waitFor(async () => expect((await loadSettings()).theme).toBe('dark'));
+    });
+
+    it('opens in the stored theme', async () => {
+      await saveSettings({ theme: 'light' });
+      page('<pre>{"a": 1}</pre>');
+      await toggleViewer(document, 'application/json');
+
+      expect(themeButton()?.textContent).toBe('Theme: Light');
+      expect(host()?.getAttribute('data-theme')).toBe('light');
+    });
+  });
+
   it('restores the page exactly on the second click', async () => {
     const doc = page(JSON_PAGE);
     const before = doc.body.outerHTML;

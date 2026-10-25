@@ -1,6 +1,7 @@
 import { detectKind } from './detect';
 import { parseDocument, type ParseResult } from './parse';
 import { renderSegmented } from './render/controls';
+import { renderThemeButton } from './render/theme';
 import { renderStatusBar, renderToolbar } from './render/toolbar';
 import { renderTree } from './render/tree';
 import css from './render/viewer.css?inline';
@@ -147,6 +148,12 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
     },
   );
   toolbar.slots.view.append(viewSwitch.element);
+
+  toolbar.slots.actions.append(
+    renderThemeButton(host, settings.theme, (theme) => {
+      saveSettings({ theme }).catch(() => {});
+    }),
+  );
 
   viewer.append(toolbar.element, content, statusBar.element);
   root.append(viewer);
