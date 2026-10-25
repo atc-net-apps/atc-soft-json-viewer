@@ -264,6 +264,17 @@
   color: var(--syntax-string);
 }
 
+.string a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 2px;
+}
+
+.string a:hover {
+  text-decoration-color: currentColor;
+}
+
 .number {
   color: var(--syntax-number);
 }

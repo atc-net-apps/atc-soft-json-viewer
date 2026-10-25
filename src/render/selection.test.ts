@@ -3,7 +3,7 @@ import { enableSelection } from './selection';
 import { renderTree } from './tree';
 
 function setup() {
-  const tree = renderTree({ a: 1, b: { c: 2 } }, { expandDepth: 2 });
+  const tree = renderTree({ a: 1, b: { c: 2 }, site: 'https://contoso.example' }, { expandDepth: 2 });
   const onSelect = vi.fn();
   enableSelection(tree, onSelect);
   const row = (path: string) => tree.querySelector<HTMLElement>(`.row[data-path="${path}"]`) as HTMLElement;
@@ -39,6 +39,17 @@ describe('enableSelection', () => {
   it('does not select the line when its fold arrow is clicked', () => {
     const { onSelect, row } = setup();
     row('$.b').querySelector<HTMLButtonElement>('.toggle')?.click();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('does not select the line when a link in it is clicked', () => {
+    const { onSelect, row } = setup();
+    const link = row('$.site').querySelector('a') as HTMLAnchorElement;
+    // Stop the test browser from trying to open the address.
+    link.addEventListener('click', (event) => event.preventDefault());
+
+    link.click();
+
     expect(onSelect).not.toHaveBeenCalled();
   });
 

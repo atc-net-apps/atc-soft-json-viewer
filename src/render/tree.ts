@@ -6,6 +6,8 @@ export interface TreeOptions {
   expandDepth?: number;
   /** How many children of a big object or array are drawn at a time. */
   pageSize?: number;
+  /** Turn http and https URLs in strings into links that open in a new tab. */
+  links?: boolean;
 }
 
 type Key = string | number;
@@ -20,7 +22,7 @@ interface Branch {
   options: Required<TreeOptions>;
 }
 
-const DEFAULTS: Required<TreeOptions> = { expandDepth: 1, pageSize: 500 };
+const DEFAULTS: Required<TreeOptions> = { expandDepth: 1, pageSize: 500, links: true };
 
 // Keeps each branch element's data without putting it in the DOM.
 const branches = new WeakMap<Element, Branch>();
@@ -98,7 +100,7 @@ function renderEntry(
   const row = createRow(path, depth);
   rowValues.set(row, value);
   appendKey(row, key);
-  row.append(renderPrimitive(value));
+  row.append(renderPrimitive(value, options));
   if (!isLast) {
     row.append(span('punctuation', ','));
   }
@@ -207,7 +209,7 @@ function renderNextPage(branchElement: Element, branch: Branch): void {
   }
 }
 
-function renderPrimitive(value: unknown): HTMLElement {
+function renderPrimitive(value: unknown, options: Required<TreeOptions>): HTMLElement {
   if (value instanceof BigNumber) {
     const element = span('number big-number', value.source);
     element.title = 'Exact value as sent. It is larger than a normal JavaScript number can hold.';
@@ -216,7 +218,7 @@ function renderPrimitive(value: unknown): HTMLElement {
   switch (typeof value) {
     case 'string':
       // JSON.stringify adds the quotes and shows escapes such as \n, exactly as JSON writes them.
-      return span('string', JSON.stringify(value));
+      return options.links && isWebUrl(value) ? renderLink(value) : span('string', JSON.stringify(value));
     case 'number':
       return span('number', String(value));
     case 'boolean':
@@ -224,6 +226,34 @@ function renderPrimitive(value: unknown): HTMLElement {
     default:
       return span('null', 'null');
   }
+}
+
+/**
+ * Only whole-string http and https URLs become links. Other schemes, such as `javascript:` or
+ * `file:`, never do, so a JSON value can't run code or open local files when clicked.
+ */
+export function isWebUrl(text: string): boolean {
+  if (!/^https?:\/\/\S+$/i.test(text)) {
+    return false;
+  }
+  try {
+    const url = new URL(text);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/** `"https://…"` with the URL as a link that opens in a new tab, without telling the target where it came from. */
+function renderLink(url: string): HTMLElement {
+  const element = span('string', '');
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = JSON.stringify(url).slice(1, -1);
+  element.append('"', link, '"');
+  return element;
 }
 
 function createRow(path: string | null, depth: number): HTMLElement {

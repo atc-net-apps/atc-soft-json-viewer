@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BigNumber } from '../parse';
-import { getRowValue, renderTree, setExpanded } from './tree';
+import { getRowValue, isWebUrl, renderTree, setExpanded } from './tree';
 
 const row = (tree: HTMLElement, path: string) => tree.querySelector<HTMLElement>(`.row[data-path="${path}"]`);
 const rowText = (tree: HTMLElement, path: string) => row(tree, path)?.textContent;
@@ -117,6 +117,51 @@ describe('renderTree', () => {
       expect(rowText(tree, '$[1199]')).toBe('1199');
       expect(rowText(tree, '$[499]')).toBe('499,');
     });
+  });
+
+  describe('links', () => {
+    it('turns http and https addresses into links that open in a new tab', () => {
+      const tree = renderTree({ site: 'https://contoso.example/about', api: 'http://localhost:5179/orders.json' });
+      const link = row(tree, '$.site')?.querySelector('a');
+
+      expect(link?.href).toBe('https://contoso.example/about');
+      expect(link?.target).toBe('_blank');
+      expect(link?.rel).toBe('noopener noreferrer');
+      expect(rowText(tree, '$.site')).toBe('"site": "https://contoso.example/about",');
+      expect(row(tree, '$.api')?.querySelector('a')).not.toBeNull();
+    });
+
+    it.each([
+      ['a javascript: address', 'javascript:alert(1)'],
+      ['a file: address', 'file:///C:/Windows/win.ini'],
+      ['a data: address', 'data:text/html,<script>alert(1)</script>'],
+      ['a mailto: address', 'mailto:orders@contoso.example'],
+      ['text around an address', 'see https://contoso.example'],
+      ['an address with a space', 'https://contoso.example/a b'],
+      ['a scheme without a host', 'https://'],
+    ])('does not turn %s into a link', (_, text) => {
+      const tree = renderTree({ value: text });
+      expect(row(tree, '$.value')?.querySelector('a')).toBeNull();
+      expect(rowText(tree, '$.value')).toBe(`"value": ${JSON.stringify(text)}`);
+    });
+
+    it('makes no links when links are switched off', () => {
+      const tree = renderTree({ site: 'https://contoso.example' }, { links: false });
+      expect(tree.querySelector('a')).toBeNull();
+    });
+  });
+});
+
+describe('isWebUrl', () => {
+  it.each(['https://contoso.example', 'HTTP://CONTOSO.EXAMPLE/A?b=1#c', 'https://tracking.example/track?id=PN123&lang=da'])(
+    'accepts %s',
+    (text) => {
+      expect(isWebUrl(text)).toBe(true);
+    },
+  );
+
+  it.each(['ftp://files.example', 'javascript:alert(1)', 'https://'])('rejects %s', (text) => {
+    expect(isWebUrl(text)).toBe(false);
   });
 });
 
