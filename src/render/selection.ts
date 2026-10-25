@@ -9,8 +9,11 @@ export interface Selection {
  */
 export function enableSelection(tree: HTMLElement, onSelect: (row: HTMLElement) => void): Selection {
   function select(row: HTMLElement): void {
-    tree.querySelector('.row.selected')?.classList.remove('selected');
+    const previous = tree.querySelector('.row.selected');
+    previous?.classList.remove('selected');
+    previous?.removeAttribute('aria-selected');
     row.classList.add('selected');
+    row.setAttribute('aria-selected', 'true');
     onSelect(row);
   }
 

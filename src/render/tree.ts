@@ -75,6 +75,9 @@ const tokens = new WeakMap<Element, DecodedJwt>();
 export function renderTree(value: unknown, options: TreeOptions = {}): HTMLElement {
   const tree = document.createElement('div');
   tree.className = 'tree';
+  // A WAI-ARIA tree: each line with a path is a treeitem with its level (see keyboard.ts).
+  tree.setAttribute('role', 'tree');
+  tree.setAttribute('aria-label', 'JSON document');
   const state: TreeState = { ...DEFAULTS, ...options, pattern: null, value };
   state.pattern = state.search ? searchPattern(state.search) : null;
   trees.set(tree, state);
@@ -257,6 +260,7 @@ function updateLabels(branchElement: Element): void {
   const deep = branchElement.classList.contains('deep');
   const everything = `${deep ? 'Fold' : 'Unfold'} everything inside`;
 
+  branchElement.querySelector(':scope > .branch-head')?.setAttribute('aria-expanded', String(expanded));
   const toggle = branchElement.querySelector(':scope > .branch-head > .toggle');
   toggle?.setAttribute('aria-expanded', String(expanded));
   toggle?.setAttribute('aria-label', expanded ? 'Collapse' : 'Expand');
@@ -400,6 +404,8 @@ function renderBranch(
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'toggle';
+  // Not a Tab stop of its own: the keyboard folds with ← → and Enter on the line.
+  toggle.tabIndex = -1;
   head.append(toggle);
   appendKey(head, key);
   head.append(span('bracket', open));
@@ -418,6 +424,8 @@ function renderBranch(
   const expandAll = document.createElement('button');
   expandAll.type = 'button';
   expandAll.className = 'expand-all';
+  // Not a Tab stop of its own: the keyboard uses * on the line.
+  expandAll.tabIndex = -1;
   head.append(expandAll);
 
   const children = document.createElement('div');
@@ -482,6 +490,8 @@ function renderNextPage(branchElement: Element, branch: Branch): void {
     const more = document.createElement('button');
     more.type = 'button';
     more.className = 'more';
+    // Not a Tab stop of its own: Enter on its line shows more (keyboard.ts).
+    more.tabIndex = -1;
     more.textContent = `Show ${Math.min(remaining, options.pageSize)} more (${remaining} not shown)`;
     row.append(more);
     children.append(row);
@@ -517,6 +527,8 @@ function renderJwtChip(token: DecodedJwt): HTMLElement {
   const chip = document.createElement('button');
   chip.type = 'button';
   chip.className = 'jwt-chip';
+  // Not a Tab stop of its own: Enter on the line opens it (keyboard.ts).
+  chip.tabIndex = -1;
   chip.title = 'A JSON Web Token: click to show what is inside';
   chip.setAttribute('aria-label', 'Decode this JSON Web Token');
   chip.setAttribute('aria-expanded', 'false');
@@ -612,6 +624,8 @@ function renderLink(url: string): HTMLElement {
   link.href = url;
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
+  // Not a Tab stop of its own: Enter on the line opens it (keyboard.ts).
+  link.tabIndex = -1;
   link.textContent = JSON.stringify(url).slice(1, -1);
   element.append('"', link, '"');
   return element;
@@ -661,6 +675,8 @@ function createRow(path: string | null, depth: number): HTMLElement {
   row.className = 'row';
   if (path !== null) {
     row.dataset.path = path;
+    row.setAttribute('role', 'treeitem');
+    row.setAttribute('aria-level', String(depth + 1));
   }
   // Set through the CSSOM, which a page's Content-Security-Policy does not block.
   row.style.setProperty('--depth', String(depth));

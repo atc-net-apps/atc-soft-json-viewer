@@ -22,6 +22,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - ⚠️ **Invalid JSON pointer**: broken JSON shows what is wrong, with the broken line highlighted and a caret at the exact column
 - ⚡ **Large responses**: only what you unfold is drawn, and big arrays are shown 500 items at a time
 - 📊 **Status bar**: shows the response's content type and size
+- ⌨️ **Keyboard navigation**: move through the tree, fold, unfold and search without the mouse
 - 💾 **Remembers your settings**: stored in this browser only
 
 **Privacy & security**
@@ -78,7 +79,7 @@ The **Unfold 1 · 2 · 3 · All** buttons in the toolbar unfold every object and
 
 ### ⏬ Unfold everything inside
 
-Hover the first line of an object or array and a **⇊** button appears at its end. Click it to unfold that object or array and everything inside it, all the way down, without opening the rest of the response. The button then turns into **⇈**, which folds it all again. **Alt+click** on the ▸ / ▾ arrow does the same. As soon as you fold something inside by hand, the button goes back to ⇊. Big arrays still show 500 entries at a time.
+Hover the first line of an object or array and a **⇊** button appears at its end. Click it to unfold that object or array and everything inside it, all the way down, without opening the rest of the response. The button then turns into **⇈**, which folds it all again. **Alt+click** on the ▸ / ▾ arrow, or <kbd>*</kbd> on the keyboard, does the same. As soon as you fold something inside by hand, the button goes back to ⇊. Big arrays still show 500 entries at a time.
 
 ### 🔍 Search
 
@@ -160,6 +161,25 @@ Dates and Unix times have a dotted underline. Click one to see it in your local 
 Login tokens such as `"accessToken": "eyJhbGciOi…"` are JSON Web Tokens: two parts of JSON (a header and a payload) plus a signature, encoded so they look like random text. Values that are tokens get a **JWT** chip at the end of their line. Click it to see the header and payload as trees under the line, with `exp` (expires) and `iat` (issued at) underlined as times, so you can see at a glance whether the token is still valid. Click the chip again to hide them.
 
 The token is decoded in your browser and never sent anywhere. The signature is **not** verified, and the box says so: decoding shows what a token claims, not whether it is genuine.
+
+### ⌨️ Keyboard shortcuts
+
+The tree is ready for the keyboard as soon as a page is formatted, and it is a single **Tab** stop. The line you are on is selected, so the status bar shows its path and **Copy path** / **Copy value** work straight away.
+
+| Key | Action |
+|-----|--------|
+| <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd> | Format the page, or restore it |
+| <kbd>↓</kbd> / <kbd>↑</kbd> | Next / previous line |
+| <kbd>→</kbd> | Unfold an object or array, or go to its first line |
+| <kbd>←</kbd> | Fold an object or array, or go to the one it is in |
+| <kbd>Home</kbd> / <kbd>End</kbd> | First / last line |
+| <kbd>Enter</kbd> | Fold or unfold; on other lines, open the link, show the JWT or the local time, or **Show more** |
+| <kbd>*</kbd> | Unfold or fold everything inside (like ⇊ / ⇈) |
+| <kbd>/</kbd> | Go to the search box |
+| <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd> in the search box | Next / previous match |
+| <kbd>Esc</kbd> | Clear the search |
+
+With a screen reader, the tree reads as a tree: each line says its level and whether it is folded.
 
 ### 🎨 Light and dark
 

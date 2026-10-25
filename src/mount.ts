@@ -4,8 +4,9 @@ import { parseDocument } from './parse';
 import { ROOT_PATH } from './path';
 import { renderSegmented, renderToggle } from './render/controls';
 import { renderParseError } from './render/error';
+import { enableKeyboard, type Keyboard } from './render/keyboard';
 import { renderLevelButtons } from './render/levels';
-import { renderSearch } from './render/search';
+import { renderSearch, type SearchBox } from './render/search';
 import { enableSelection, type Selection } from './render/selection';
 import { renderNoTable, renderTable } from './render/table';
 import { renderThemeButton } from './render/theme';
@@ -144,6 +145,8 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
 
   const result = parseDocument(text);
   let selection: Selection | null = null;
+  let keyboard: Keyboard | null = null;
+  let search: SearchBox | null = null;
   let sortKeys = settings.sortKeys;
   let sortButton: HTMLButtonElement | null = null;
   // Where the table now shown was looked up from, to draw it again A–Z.
@@ -168,7 +171,10 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
       selection = enableSelection(tree, (row) => {
         selected = row;
         statusBar.setPath(row.dataset.path ?? null);
+        // Wherever a line was selected from (mouse, search, table), the keyboard goes on from there.
+        keyboard?.activate(row);
       });
+      keyboard = enableKeyboard(tree, { select: (row) => selection?.select(row) });
       return tree;
     },
     table: () => tableView,
@@ -262,7 +268,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
 
   // None for broken JSON, which has nothing to search or unfold.
   if (result.ok) {
-    const search = renderSearch(() => tree, result.value, {
+    search = renderSearch(() => tree, result.value, {
       onSelect: (line) => selection?.select(line),
       sortKeys: () => sortKeys,
     });
@@ -280,7 +286,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
         if (line && selection) {
           selection.select(line);
         }
-        search.refresh();
+        search?.refresh();
       }
       // The same table, with its columns in the new order.
       if (tableShown) {
@@ -305,8 +311,28 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
     }),
   );
 
+  // "/" goes to the search box and Escape clears it, from anywhere but a text box.
+  viewer.addEventListener('keydown', (event) => {
+    const typing = (event.target as Element).closest('input, textarea');
+    if (!search || typing || event.ctrlKey || event.metaKey || event.altKey || toolbar.slots.search.hidden) {
+      return;
+    }
+    if (event.key === '/') {
+      event.preventDefault();
+      search.focus();
+    } else if (event.key === 'Escape') {
+      search.clear();
+    }
+  });
+
   viewer.append(toolbar.element, content, statusBar.element);
   root.append(viewer);
+  // Ready for the keyboard straight away: ↓ goes down the tree, / goes to the search box.
+  // (A function, because `tree` is set by the view builder above, which TypeScript can't follow.)
+  const focusTree = () => tree?.focus({ preventScroll: true });
+  if (!content.querySelector<HTMLElement>('[data-view="tree"]')?.hidden) {
+    focusTree();
+  }
 
   if (import.meta.env.DEV) {
     console.log(`ATC JSON Viewer: formatted ${text.length} characters in ${Math.round(performance.now() - started)} ms`);

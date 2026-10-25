@@ -31,6 +31,10 @@ export interface SearchBox {
   results: HTMLElement;
   /** Searches again for the same text, after the tree was drawn again (for example A–Z). */
   refresh(): void;
+  /** Puts the cursor in the search box, with its text selected so typing replaces it. */
+  focus(): void;
+  /** Empties the search box and removes the highlights. */
+  clear(): void;
 }
 
 /**
@@ -228,7 +232,17 @@ export function renderSearch(getTree: () => HTMLElement | null, value: unknown, 
     search(term);
   }
 
-  return { element, results, refresh };
+  function focus(): void {
+    input.focus();
+    input.select();
+  }
+
+  function clear(): void {
+    input.value = '';
+    search('');
+  }
+
+  return { element, results, refresh, focus, clear };
 }
 
 /** One line for a result: plain values as JSON, objects and arrays by their size. */

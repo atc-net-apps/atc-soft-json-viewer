@@ -460,6 +460,58 @@ describe('toggleViewer', () => {
     });
   });
 
+  describe('keyboard', () => {
+    const root = () => getMountedRoot() as ShadowRoot;
+    const tree = () => root().querySelector<HTMLElement>('.tree') as HTMLElement;
+    const press = (target: Element, key: string) =>
+      target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true }));
+
+    it('puts the keyboard focus in the tree when the page is formatted', async () => {
+      page(JSON_PAGE);
+      await toggleViewer(document, 'application/json');
+      expect(root().activeElement).toBe(tree());
+    });
+
+    it('selects lines with the arrow keys, so the status bar shows their path', async () => {
+      page(JSON_PAGE);
+      await toggleViewer(document, 'application/json');
+
+      press(tree(), 'ArrowDown');
+
+      expect(root().querySelector('.row.selected')?.getAttribute('data-path')).toBe('$.orderId');
+      expect(root().querySelector('.status-path')?.textContent).toBe('$.orderId');
+    });
+
+    it('goes to the search box with / and clears the search with Escape', async () => {
+      page(JSON_PAGE);
+      await toggleViewer(document, 'application/json');
+      const input = root().querySelector<HTMLInputElement>('.toolbar-search input') as HTMLInputElement;
+      input.value = 'aarhus';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      tree().focus();
+
+      press(tree(), '/');
+      expect(root().activeElement).toBe(input);
+
+      tree().focus();
+      press(tree(), 'Escape');
+      expect(input.value).toBe('');
+      expect(root().querySelector('mark')).toBeNull();
+    });
+
+    it('types / into the search box instead of jumping to it', async () => {
+      page(JSON_PAGE);
+      await toggleViewer(document, 'application/json');
+      const input = root().querySelector<HTMLInputElement>('.toolbar-search input') as HTMLInputElement;
+      input.focus();
+
+      const event = new KeyboardEvent('keydown', { key: '/', bubbles: true, cancelable: true });
+      input.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
+    });
+  });
+
   describe('copy value and path', () => {
     const root = () => getMountedRoot() as ShadowRoot;
     const pathText = () => root().querySelector('.status-path')?.textContent;
