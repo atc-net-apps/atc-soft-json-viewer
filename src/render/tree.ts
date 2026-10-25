@@ -1,5 +1,6 @@
 import { BigNumber } from '../parse';
 import { childPath, ROOT_PATH } from '../path';
+import { type Key, searchPattern } from '../search';
 
 export interface TreeOptions {
   /** How many levels are unfolded at first: 0 = all folded, 1 = only the top level open. */
@@ -10,9 +11,12 @@ export interface TreeOptions {
   links?: boolean;
   /** Show "3 items" or "5 keys" on the first line of every object and array. */
   counts?: boolean;
+  /** Highlight this text in keys and values (case-insensitive). */
+  search?: string;
 }
 
-type Key = string | number;
+/** One tree's options. Lines drawn later read them too, so changing them affects what is drawn next. */
+type TreeState = Required<TreeOptions> & { pattern: RegExp | null };
 
 /** What a folded or unfolded object/array needs to draw its children later. */
 interface Branch {
@@ -21,15 +25,24 @@ interface Branch {
   depth: number;
   entries: [Key, unknown][] | null;
   rendered: number;
-  options: Required<TreeOptions>;
+  options: TreeState;
 }
 
-const DEFAULTS: Required<TreeOptions> = { expandDepth: 1, pageSize: 500, links: true, counts: true };
+const DEFAULTS: Required<TreeOptions> = { expandDepth: 1, pageSize: 500, links: true, counts: true, search: '' };
+
+// The elements that show a key or a value, which search highlights.
+const SEARCHABLE = '.key, .string, .number, .boolean, .null';
+// The same, but only a line's own (not those of the lines inside it).
+const OWN_SEARCHABLE = SEARCHABLE.split(', ')
+  .map((selector) => `:scope > ${selector}`)
+  .join(', ');
 
 // Keeps each branch element's data without putting it in the DOM.
 const branches = new WeakMap<Element, Branch>();
 // The JSON value behind each row that has a path, for copying.
 const rowValues = new WeakMap<Element, unknown>();
+// Each tree's options, for changes after it is drawn.
+const trees = new WeakMap<Element, TreeState>();
 
 /**
  * Draws a JSON value as a collapsible tree.
@@ -40,9 +53,62 @@ const rowValues = new WeakMap<Element, unknown>();
 export function renderTree(value: unknown, options: TreeOptions = {}): HTMLElement {
   const tree = document.createElement('div');
   tree.className = 'tree';
-  tree.append(renderEntry(null, value, ROOT_PATH, 0, true, { ...DEFAULTS, ...options }));
+  const state: TreeState = { ...DEFAULTS, ...options, pattern: null };
+  state.pattern = state.search ? searchPattern(state.search) : null;
+  trees.set(tree, state);
+  const root = renderEntry(null, value, ROOT_PATH, 0, true, state);
+  markEntry(root, state.pattern);
+  tree.append(root);
   tree.addEventListener('click', onClick);
   return tree;
+}
+
+/**
+ * Highlights `term` in every key and value: those drawn now and those drawn later. An empty term
+ * removes the highlights. What is found matches `findMatches`, which searches the whole document.
+ */
+export function setSearch(tree: Element, term: string): void {
+  const state = trees.get(tree);
+  if (!state) {
+    return;
+  }
+  state.search = term;
+  state.pattern = term ? searchPattern(term) : null;
+  for (const element of tree.querySelectorAll(SEARCHABLE)) {
+    markMatches(element, state.pattern);
+  }
+}
+
+/**
+ * Unfolds the objects and arrays on the way to the entry at `keys` and returns its line (for an
+ * object or array: its first line). With `allPages`, "Show more" pages are drawn until the entry is
+ * shown; without it, an entry beyond the drawn pages gives `null`.
+ */
+export function revealPath(tree: Element, keys: readonly Key[], allPages = true): HTMLElement | null {
+  let element = tree.firstElementChild;
+  for (const key of keys) {
+    const branch = element && branches.get(element);
+    if (!element || !branch) {
+      return null;
+    }
+    setExpanded(element, true);
+    // The position in the drawn order, which is the order of `entries`.
+    const index = entriesOf(branch).findIndex(([entryKey]) => entryKey === key);
+    if (index < 0) {
+      return null;
+    }
+    while (branch.rendered <= index) {
+      if (!allPages) {
+        return null;
+      }
+      showMore(element, branch);
+    }
+    element = element.querySelector(':scope > .children')?.children[index] ?? null;
+  }
+  if (!element) {
+    return null;
+  }
+  return branches.has(element) ? element.querySelector<HTMLElement>(':scope > .branch-head') : (element as HTMLElement);
 }
 
 /** The JSON value a row shows (for an object or array: the whole value), or `undefined` for rows without one. */
@@ -115,12 +181,12 @@ function updateLabels(branchElement: Element): void {
  */
 export function expandToLevel(tree: Element, level: number): void {
   const rootElement = tree.firstElementChild;
-  const root = rootElement && branches.get(rootElement);
-  if (!rootElement || !root) {
+  const state = trees.get(tree);
+  if (!rootElement || !state) {
     return;
   }
   // Objects and arrays drawn later, by "Show more" or by unfolding one by hand, follow the new level too.
-  root.options.expandDepth = level;
+  state.expandDepth = level;
   applyLevel(rootElement, level);
 }
 
@@ -163,10 +229,15 @@ function onClick(event: MouseEvent): void {
     const branchElement = more.closest('.branch');
     const branch = branchElement && branches.get(branchElement);
     if (branchElement && branch) {
-      more.closest('.row')?.remove();
-      renderNextPage(branchElement, branch);
+      showMore(branchElement, branch);
     }
   }
+}
+
+/** Replaces the "Show more" line with the next page of children. */
+function showMore(branchElement: Element, branch: Branch): void {
+  branchElement.querySelector(':scope > .children > .row > .more')?.closest('.row')?.remove();
+  renderNextPage(branchElement, branch);
 }
 
 function renderEntry(
@@ -175,7 +246,7 @@ function renderEntry(
   path: string,
   depth: number,
   isLast: boolean,
-  options: Required<TreeOptions>,
+  options: TreeState,
 ): HTMLElement {
   if (value !== null && typeof value === 'object' && !(value instanceof BigNumber)) {
     return renderBranch(key, value, path, depth, isLast, options);
@@ -196,7 +267,7 @@ function renderBranch(
   path: string,
   depth: number,
   isLast: boolean,
-  options: Required<TreeOptions>,
+  options: TreeState,
 ): HTMLElement {
   const [open, close] = Array.isArray(value) ? ['[', ']'] : ['{', '}'];
   const comma = isLast ? '' : ',';
@@ -262,16 +333,21 @@ function renderBranch(
   return branchElement;
 }
 
-function renderNextPage(branchElement: Element, branch: Branch): void {
+/** A branch's children in the order they are drawn. */
+function entriesOf(branch: Branch): [Key, unknown][] {
   branch.entries ??= Array.isArray(branch.value)
     ? branch.value.map((child, index): [Key, unknown] => [index, child])
     : Object.entries(branch.value);
+  return branch.entries;
+}
 
+function renderNextPage(branchElement: Element, branch: Branch): void {
   const children = branchElement.querySelector(':scope > .children');
   if (!children) {
     return;
   }
-  const { entries, options } = branch;
+  const entries = entriesOf(branch);
+  const { options } = branch;
   const deep = branchElement.classList.contains('deep');
   const end = Math.min(entries.length, branch.rendered + options.pageSize);
   for (let i = branch.rendered; i < end; i++) {
@@ -284,6 +360,7 @@ function renderNextPage(branchElement: Element, branch: Branch): void {
       i === entries.length - 1,
       options,
     );
+    markEntry(entry, options.pattern);
     children.append(entry);
     if (deep && branches.has(entry)) {
       setExpandedDeep(entry, true);
@@ -303,7 +380,7 @@ function renderNextPage(branchElement: Element, branch: Branch): void {
   }
 }
 
-function renderPrimitive(value: unknown, options: Required<TreeOptions>): HTMLElement {
+function renderPrimitive(value: unknown, options: TreeState): HTMLElement {
   if (value instanceof BigNumber) {
     const element = span('number big-number', value.source);
     element.title = 'Exact value as sent. It is larger than a normal JavaScript number can hold.';
@@ -354,6 +431,45 @@ function renderLink(url: string): HTMLElement {
   link.textContent = JSON.stringify(url).slice(1, -1);
   element.append('"', link, '"');
   return element;
+}
+
+/** Highlights the search term in a newly drawn entry's own line (its children mark themselves). */
+function markEntry(entry: Element, pattern: RegExp | null): void {
+  if (!pattern) {
+    return;
+  }
+  const line = branches.has(entry) ? entry.querySelector(':scope > .branch-head') : entry;
+  for (const element of line?.querySelectorAll(OWN_SEARCHABLE) ?? []) {
+    markMatches(element, pattern);
+  }
+}
+
+/**
+ * Wraps every match of `pattern` in a key or value element in `<mark>`, or removes the marks when
+ * `pattern` is `null`. Only the text inside the quotes is searched, so the quotes never match, and
+ * a link keeps its `<a>`. Built with DOM calls only, never as HTML.
+ */
+function markMatches(element: Element, pattern: RegExp | null): void {
+  const target = element.querySelector('a') ?? element;
+  const quoted = target === element && (element.classList.contains('key') || element.classList.contains('string'));
+  const shown = target.textContent ?? '';
+  const text = quoted ? shown.slice(1, -1) : shown;
+  const matches = pattern ? Array.from(text.matchAll(pattern)) : [];
+  if (matches.length === 0 && !target.querySelector('mark')) {
+    return;
+  }
+
+  const parts: (string | Node)[] = [];
+  let last = 0;
+  for (const match of matches) {
+    const mark = document.createElement('mark');
+    mark.textContent = match[0];
+    parts.push(text.slice(last, match.index), mark);
+    last = match.index + match[0].length;
+  }
+  parts.push(text.slice(last));
+  const content = parts.filter((part) => part !== '');
+  target.replaceChildren(...(quoted ? ['"', ...content, '"'] : content));
 }
 
 function createRow(path: string | null, depth: number): HTMLElement {

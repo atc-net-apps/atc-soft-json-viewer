@@ -4,6 +4,7 @@ import { parseDocument } from './parse';
 import { renderSegmented } from './render/controls';
 import { renderParseError } from './render/error';
 import { renderLevelButtons } from './render/levels';
+import { renderSearch } from './render/search';
 import { enableSelection } from './render/selection';
 import { renderThemeButton } from './render/theme';
 import { renderStatusBar, renderToolbar } from './render/toolbar';
@@ -169,7 +170,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
     initialView,
     (view) => {
       views.show(view);
-      toolbar.slots.levels.hidden = view !== 'tree';
+      toolbar.slots.search.hidden = toolbar.slots.levels.hidden = view !== 'tree';
       // The selected path only means something in the tree.
       statusBar.setPath(view === 'tree' && selected ? (selected.dataset.path ?? null) : null);
       // Remembered for the next page; failing to save must not break the viewer.
@@ -178,8 +179,9 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
   );
   toolbar.slots.view.append(viewSwitch.element);
 
-  // Only a tree can be unfolded: none for broken JSON, and hidden in the raw view.
+  // Only a tree can be searched and unfolded: none for broken JSON, and hidden in the raw view.
   if (result.ok) {
+    toolbar.slots.search.append(renderSearch(() => tree, result.value));
     toolbar.slots.levels.append(
       renderLevelButtons((level) => {
         if (tree) {
@@ -187,7 +189,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
         }
       }),
     );
-    toolbar.slots.levels.hidden = initialView !== 'tree';
+    toolbar.slots.search.hidden = toolbar.slots.levels.hidden = initialView !== 'tree';
   }
 
   toolbar.slots.actions.append(

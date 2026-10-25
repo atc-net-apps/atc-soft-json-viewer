@@ -7,6 +7,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - 🌳 **Collapsible tree**: fold and unfold any object or array
 - 🪜 **Unfold to level**: unfold 1, 2 or 3 levels, or everything, with one click
 - ⏬ **Unfold everything inside**: open one object or array all the way down with ⇊ or Alt+click
+- 🔍 **Search**: highlight matching keys and values, unfold where they are, and step through them with Enter
 - 📄 **Raw / Tree toggle**: switch to the exact text the server sent, and back
 - 📋 **Copy value & path**: click any line to see its JSON path, and copy the path or the value
 - 🔗 **Clickable links**: web addresses in values open in a new tab
@@ -73,6 +74,18 @@ The **Unfold 1 · 2 · 3 · All** buttons in the toolbar unfold every object and
 ### ⏬ Unfold everything inside
 
 Hover the first line of an object or array and a **⇊** button appears at its end. Click it to unfold that object or array and everything inside it, all the way down, without opening the rest of the response. The button then turns into **⇈**, which folds it all again. **Alt+click** on the ▸ / ▾ arrow does the same. As soon as you fold something inside by hand, the button goes back to ⇊. Big arrays still show 500 entries at a time.
+
+### 🔍 Search
+
+Type in the **Search keys and values** box in the toolbar. Every key and value containing the text is highlighted, ignoring upper and lower case, and the counter shows how many there are, for example **1 of 12**. The objects and arrays that contain the first 200 matches are unfolded straight away; the rest are unfolded as you get to them.
+
+| Key | Action |
+|-----|--------|
+| **Enter** or **↓** (key or button) | Go to the next match |
+| **Shift+Enter** or **↑** (key or button) | Go to the previous match |
+| **Escape** | Clear the search |
+
+The search covers the whole response, including the parts that aren't drawn yet, such as entries behind **Show more**. Text is matched as the tree shows it: numbers as written, and strings without their quotes. After 10 000 matches the counter stops counting and shows **10,000+**. The search box is hidden in the raw view, where the browser's own **Ctrl+F** works.
 
 ### 📄 Raw / Tree toggle
 

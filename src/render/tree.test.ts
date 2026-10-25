@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { BigNumber } from '../parse';
-import { countLabel, expandToLevel, getRowValue, isWebUrl, renderTree, setExpanded, setExpandedDeep } from './tree';
+import {
+  countLabel,
+  expandToLevel,
+  getRowValue,
+  isWebUrl,
+  renderTree,
+  revealPath,
+  setExpanded,
+  setExpandedDeep,
+  setSearch,
+} from './tree';
 
 const row = (tree: HTMLElement, path: string) => tree.querySelector<HTMLElement>(`.row[data-path="${path}"]`);
 const rowText = (tree: HTMLElement, path: string) => row(tree, path)?.textContent;
@@ -345,6 +355,130 @@ describe('expandToLevel', () => {
     const tree = renderTree(42);
     expandToLevel(tree, 2);
     expect(rowText(tree, '$')).toBe('42');
+  });
+});
+
+describe('setSearch', () => {
+  const marks = (tree: HTMLElement) => Array.from(tree.querySelectorAll('mark'), (mark) => mark.textContent);
+
+  it('highlights the term in keys and values, ignoring case', () => {
+    const tree = renderTree({ sku: 'SKU-1', other: 'x' });
+
+    setSearch(tree, 'sku');
+
+    expect(marks(tree)).toEqual(['sku', 'SKU']);
+    expect(row(tree, '$.sku')?.querySelector('.key mark')?.textContent).toBe('sku');
+    expect(row(tree, '$.sku')?.querySelector('.string mark')?.textContent).toBe('SKU');
+  });
+
+  it('highlights every occurrence in a value', () => {
+    const tree = renderTree({ text: 'banana' });
+    setSearch(tree, 'an');
+    expect(marks(tree)).toEqual(['an', 'an']);
+  });
+
+  it('keeps the text of every line the same', () => {
+    const tree = renderTree({ sku: 'A-100', n: 100 });
+
+    setSearch(tree, '100');
+
+    expect(rowText(tree, '$.sku')).toBe('"sku": "A-100",');
+    expect(rowText(tree, '$.n')).toBe('"n": 100');
+  });
+
+  it('never highlights the quotes, counts or brackets', () => {
+    const tree = renderTree({ items: [1, 2] });
+    setSearch(tree, '"');
+    expect(marks(tree)).toEqual([]);
+    setSearch(tree, '[');
+    expect(marks(tree)).toEqual([]);
+    setSearch(tree, 'items');
+    expect(marks(tree)).toEqual(['items']);
+  });
+
+  it('highlights inside links and keeps them working', () => {
+    const tree = renderTree({ site: 'https://contoso.example' });
+
+    setSearch(tree, 'contoso');
+
+    const link = row(tree, '$.site')?.querySelector('a');
+    expect(link?.querySelector('mark')?.textContent).toBe('contoso');
+    expect(link?.href).toBe('https://contoso.example/');
+  });
+
+  it('highlights lines that are drawn later', () => {
+    const tree = renderTree({ outer: { sku: 'A-100' } });
+    setSearch(tree, 'sku');
+
+    setExpanded(branchOf(tree, '$.outer'), true);
+
+    expect(row(tree, '$.outer.sku')?.querySelector('mark')?.textContent).toBe('sku');
+  });
+
+  it('moves the highlights when the term changes and removes them when it is empty', () => {
+    const tree = renderTree({ sku: 'A-100' });
+    setSearch(tree, 'sku');
+    setSearch(tree, 'A-1');
+    expect(marks(tree)).toEqual(['A-1']);
+
+    setSearch(tree, '');
+
+    expect(tree.querySelector('mark')).toBeNull();
+    expect(rowText(tree, '$.sku')).toBe('"sku": "A-100"');
+  });
+
+  it('highlights a document that is a single value', () => {
+    const tree = renderTree('hello', { search: 'ell' });
+    expect(marks(tree)).toEqual(['ell']);
+  });
+
+  it('never turns text from the page into HTML', () => {
+    const tree = renderTree({ html: '<img src=x onerror=alert(1)>' });
+    setSearch(tree, 'img');
+    expect(tree.querySelector('img')).toBeNull();
+    expect(marks(tree)).toEqual(['img']);
+  });
+});
+
+describe('revealPath', () => {
+  it('unfolds the objects and arrays on the way and returns the line', () => {
+    const tree = renderTree({ a: { b: { c: 1 } } });
+
+    const line = revealPath(tree, ['a', 'b', 'c']);
+
+    expect(line).toBe(row(tree, '$.a.b.c'));
+    expect(branchOf(tree, '$.a.b').classList.contains('collapsed')).toBe(false);
+  });
+
+  it("returns an object's first line", () => {
+    const tree = renderTree({ a: { b: { c: 1 } } });
+    expect(revealPath(tree, ['a', 'b'])).toBe(row(tree, '$.a.b'));
+  });
+
+  it('draws "Show more" pages until the entry is shown', () => {
+    const tree = renderTree({ items: Array.from({ length: 2000 }, (_, i) => i) }, { pageSize: 500 });
+
+    expect(revealPath(tree, ['items', 1100])?.textContent).toBe('1100,');
+    expect(tree.querySelector('.more')?.textContent).toBe('Show 500 more (500 not shown)');
+  });
+
+  it('does not draw more pages when asked not to', () => {
+    const tree = renderTree({ items: Array.from({ length: 1200 }, (_, i) => i) }, { pageSize: 500 });
+
+    expect(revealPath(tree, ['items', 1100], false)).toBeNull();
+    expect(branchOf(tree, '$.items').classList.contains('collapsed')).toBe(false);
+    expect(tree.querySelectorAll('.children > .row[data-path]').length).toBe(500);
+  });
+
+  it('returns nothing for a path that is not in the document', () => {
+    const tree = renderTree({ a: { b: 1 } });
+    expect(revealPath(tree, ['a', 'missing'])).toBeNull();
+    expect(revealPath(tree, ['a', 'b', 'c'])).toBeNull();
+  });
+
+  it('returns the root line for an empty path', () => {
+    const tree = renderTree(42);
+    expect(revealPath(tree, [])).toBe(row(tree, '$'));
   });
 });
 

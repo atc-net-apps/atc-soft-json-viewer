@@ -173,6 +173,39 @@ describe('toggleViewer', () => {
     });
   });
 
+  describe('search', () => {
+    const root = () => getMountedRoot() as ShadowRoot;
+    const searchBox = () => root().querySelector<HTMLInputElement>('.toolbar-search input');
+
+    it('searches the tree from the toolbar', async () => {
+      page(JSON_PAGE);
+      await toggleViewer(document, 'application/json');
+      const input = searchBox() as HTMLInputElement;
+
+      input.value = 'aarhus';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+      expect(root().querySelector('.search-count')?.textContent).toBe('1 of 1');
+      expect(root().querySelector('.current-match')?.getAttribute('data-path')).toBe('$.customer.address.city');
+    });
+
+    it('hides the search box in the raw view', async () => {
+      page(JSON_PAGE);
+      await toggleViewer(document, 'application/json');
+      const search = root().querySelector<HTMLElement>('.toolbar-search');
+      expect(search?.hidden).toBe(false);
+
+      root().querySelector<HTMLButtonElement>('.toolbar-view [data-value="raw"]')?.click();
+      expect(search?.hidden).toBe(true);
+    });
+
+    it('shows no search box for broken JSON', async () => {
+      page('<pre>{"a": 1,}</pre>');
+      await toggleViewer(document, 'application/json');
+      expect(searchBox()).toBeNull();
+    });
+  });
+
   describe('copy value and path', () => {
     const root = () => getMountedRoot() as ShadowRoot;
     const pathText = () => root().querySelector('.status-path')?.textContent;

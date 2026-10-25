@@ -22,6 +22,10 @@
   --syntax-boolean: #2852c4;
   --syntax-null: #7c8490;
   --syntax-punctuation: #6b7480;
+  --mark-bg: #fde68a;
+  --mark-fg: #18202b;
+  --mark-current-bg: #f59e0b;
+  --mark-current-fg: #18202b;
   --indent: 1.5em;
   --gutter: 1.4em;
 
@@ -55,6 +59,10 @@
     --syntax-boolean: #82a8ff;
     --syntax-null: #7f8996;
     --syntax-punctuation: #8a93a0;
+    --mark-bg: #5c4813;
+    --mark-fg: #fff3c4;
+    --mark-current-bg: #e0a526;
+    --mark-current-fg: #171c23;
     color-scheme: dark;
   }
 }
@@ -77,6 +85,10 @@
   --syntax-boolean: #82a8ff;
   --syntax-null: #7f8996;
   --syntax-punctuation: #8a93a0;
+  --mark-bg: #5c4813;
+  --mark-fg: #fff3c4;
+  --mark-current-bg: #e0a526;
+  --mark-current-fg: #171c23;
   color-scheme: dark;
 }
 
@@ -180,6 +192,45 @@
   border-radius: 0 6px 6px 0;
 }
 
+/* The search box, its "3 of 12" counter and the previous / next buttons. */
+.search {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.search-input {
+  width: 16em;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.search-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
+}
+
+.search-count {
+  min-width: 5.5em;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.search-count:empty {
+  min-width: 0;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 /* "Unfold" in front of the 1 2 3 All buttons. */
 .levels {
   display: inline-flex;
@@ -265,6 +316,23 @@
 .row.selected,
 .row.selected:hover {
   background: var(--accent-soft);
+}
+
+/* Search matches, and the one Enter / Shift+Enter went to. */
+mark {
+  border-radius: 2px;
+  background: var(--mark-bg);
+  color: var(--mark-fg);
+}
+
+mark.current {
+  background: var(--mark-current-bg);
+  color: var(--mark-current-fg);
+  outline: 1px solid var(--mark-current-bg);
+}
+
+.row.current-match {
+  box-shadow: inset 3px 0 0 var(--mark-current-bg);
 }
 
 .key {
