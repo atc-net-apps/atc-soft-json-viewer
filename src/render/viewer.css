@@ -390,15 +390,58 @@
 /* ---------- Invalid JSON ---------- */
 
 .parse-error {
-  margin: 16px;
+  padding: 16px 16px 48px;
+}
+
+.parse-error-banner {
+  margin-bottom: 16px;
   padding: 12px 16px;
   border-left: 4px solid var(--error);
   background: var(--error-soft);
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-ui);
 }
 
-.parse-error p {
+.parse-error-banner p {
   margin: 4px 0;
+}
+
+/* The lines around the error, with line numbers. Not wrapped, so the caret stays under its column. */
+.error-source {
+  overflow-x: auto;
+  tab-size: 4;
+}
+
+.source-line {
+  display: flex;
+  white-space: pre;
+}
+
+.line-number {
+  flex: none;
+  /* --number-width is set by error.ts. */
+  min-width: calc(var(--number-width, 2ch) + 2ch);
+  padding-right: 2ch;
+  color: var(--muted);
+  text-align: right;
+  user-select: none;
+}
+
+.error-line {
+  background: var(--error-soft);
+}
+
+.error-line .line-number,
+.caret-line {
+  color: var(--error);
+}
+
+.error-char {
+  outline: 1px solid var(--error);
+  border-radius: 2px;
+}
+
+.caret-line {
+  font-weight: 700;
 }
 
 .parse-error-title {

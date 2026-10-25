@@ -1,7 +1,8 @@
 import { copyText, valueToText } from './copy';
 import { detectKind } from './detect';
-import { parseDocument, type ParseResult } from './parse';
+import { parseDocument } from './parse';
 import { renderSegmented } from './render/controls';
+import { renderParseError } from './render/error';
 import { renderLevelButtons } from './render/levels';
 import { enableSelection } from './render/selection';
 import { renderThemeButton } from './render/theme';
@@ -140,7 +141,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
   const views = createViews(content, {
     tree: () => {
       if (!result.ok) {
-        return renderParseError(result);
+        return renderParseError(text, result);
       }
       tree = renderTree(result.value, {
         expandDepth: settings.unfoldDepth,
@@ -201,22 +202,6 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
   if (import.meta.env.DEV) {
     console.log(`ATC JSON Viewer: formatted ${text.length} characters in ${Math.round(performance.now() - started)} ms`);
   }
-}
-
-/** A simple error view: what is wrong and where. */
-function renderParseError(error: Extract<ParseResult, { ok: false }>): HTMLElement {
-  const box = document.createElement('div');
-  box.className = 'parse-error';
-  const title = document.createElement('p');
-  title.className = 'parse-error-title';
-  title.textContent = "This isn't valid JSON";
-  const detail = document.createElement('p');
-  detail.textContent = `Line ${error.line}, column ${error.column}: ${error.message}`;
-  const hint = document.createElement('p');
-  hint.className = 'parse-error-hint';
-  hint.textContent = 'Click the ATC JSON Viewer button again to see the original text.';
-  box.append(title, detail, hint);
-  return box;
 }
 
 /**

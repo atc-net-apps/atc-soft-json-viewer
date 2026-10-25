@@ -13,7 +13,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - 🔢 **Item counts**: every object and array shows how many keys or items it has
 - 🎨 **Light, dark or system theme**: syntax colours that follow your system, or a theme you choose
 - 🔢 **Exact big numbers**: IDs beyond JavaScript's safe range are shown exactly as sent
-- ⚠️ **Invalid JSON pointer**: broken JSON shows what is wrong and where (line and column)
+- ⚠️ **Invalid JSON pointer**: broken JSON shows what is wrong, with the broken line highlighted and a caret at the exact column
 - ⚡ **Large responses**: only what you unfold is drawn, and big arrays are shown 500 items at a time
 - 📊 **Status bar**: shows the response's content type and size
 - 💾 **Remembers your settings**: stored in this browser only
@@ -106,6 +106,8 @@ JavaScript can only represent integers up to 9 007 199 254 740 991 exactly. Larg
 ### ⚠️ Invalid JSON pointer
 
 If the page claims to be JSON but isn't valid, the viewer explains the problem in plain English and gives the line and column, for example *"Line 5, column 38: Trailing comma: remove the last ","."*
+
+Below the message, the text around the error is shown with line numbers: the broken line is highlighted, the character where the problem starts is outlined, and a **^** points at it. You see the 10 lines before and after the error. Very long lines, as in minified JSON, are cut to the part around the error. The whole text is always one click away in the **Raw** view.
 
 ### 📊 Status bar and settings
 
