@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BigNumber } from '../parse';
-import { countLabel, getRowValue, isWebUrl, renderTree, setExpanded } from './tree';
+import { countLabel, expandToLevel, getRowValue, isWebUrl, renderTree, setExpanded } from './tree';
 
 const row = (tree: HTMLElement, path: string) => tree.querySelector<HTMLElement>(`.row[data-path="${path}"]`);
 const rowText = (tree: HTMLElement, path: string) => row(tree, path)?.textContent;
@@ -179,6 +179,69 @@ describe('renderTree', () => {
       const tree = renderTree({ site: 'https://contoso.example' }, { links: false });
       expect(tree.querySelector('a')).toBeNull();
     });
+  });
+});
+
+describe('expandToLevel', () => {
+  const NESTED = { a: { b: { c: { d: 1 } } }, list: [{ id: 1 }] };
+  const isFolded = (tree: HTMLElement, path: string) => branchOf(tree, path).classList.contains('collapsed');
+
+  it('unfolds every object and array above the level and folds the deeper ones', () => {
+    const tree = renderTree(NESTED);
+
+    expandToLevel(tree, 3);
+
+    expect(isFolded(tree, '$')).toBe(false);
+    expect(isFolded(tree, '$.a')).toBe(false);
+    expect(isFolded(tree, '$.a.b')).toBe(false);
+    expect(isFolded(tree, '$.a.b.c')).toBe(true);
+    expect(isFolded(tree, '$.list[0]')).toBe(false);
+    expect(rowText(tree, '$.list[0].id')).toBe('"id": 1');
+  });
+
+  it('folds objects again when a lower level is chosen', () => {
+    const tree = renderTree(NESTED, { expandDepth: 4 });
+
+    expandToLevel(tree, 1);
+
+    expect(isFolded(tree, '$')).toBe(false);
+    expect(isFolded(tree, '$.a')).toBe(true);
+    // Unfolding one by hand shows what is inside it folded, as at level 1.
+    setExpanded(branchOf(tree, '$.a'), true);
+    expect(isFolded(tree, '$.a.b')).toBe(true);
+  });
+
+  it('unfolds everything at level Infinity', () => {
+    const tree = renderTree(NESTED);
+
+    expandToLevel(tree, Infinity);
+
+    expect(tree.querySelector('.branch.collapsed')).toBeNull();
+    expect(rowText(tree, '$.a.b.c.d')).toBe('"d": 1');
+  });
+
+  it('applies the level to lines drawn later by "Show more"', () => {
+    const tree = renderTree([{ id: 1 }, { id: 2 }, { id: 3 }], { pageSize: 2 });
+
+    expandToLevel(tree, 2);
+    tree.querySelector<HTMLButtonElement>('.more')?.click();
+
+    expect(isFolded(tree, '$[2]')).toBe(false);
+  });
+
+  it('still draws big arrays a page at a time', () => {
+    const tree = renderTree({ items: Array.from({ length: 1200 }, (_, i) => ({ i })) });
+
+    expandToLevel(tree, Infinity);
+
+    expect(branchOf(tree, '$.items').querySelectorAll(':scope > .children > .branch').length).toBe(500);
+    expect(tree.querySelector('.more')?.textContent).toBe('Show 500 more (700 not shown)');
+  });
+
+  it('does nothing for a document that is a single value', () => {
+    const tree = renderTree(42);
+    expandToLevel(tree, 2);
+    expect(rowText(tree, '$')).toBe('42');
   });
 });
 

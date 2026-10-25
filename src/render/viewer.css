@@ -180,6 +180,17 @@
   border-radius: 0 6px 6px 0;
 }
 
+/* "Unfold" in front of the 1 2 3 All buttons. */
+.levels {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-label {
+  color: var(--muted);
+}
+
 /* ---------- Raw view ---------- */
 
 .raw {

@@ -8,7 +8,7 @@ export interface ToolbarSlots {
   view: HTMLElement;
   /** Search and JSONPath box. */
   search: HTMLElement;
-  /** Expand-to-level buttons. */
+  /** Unfold-to-level buttons. */
   levels: HTMLElement;
   /** A–Z, theme and settings buttons. */
   actions: HTMLElement;
@@ -45,7 +45,7 @@ export function renderToolbar(): Toolbar {
   const slots: ToolbarSlots = {
     view: slot('view', 'View'),
     search: slot('search', 'Search'),
-    levels: slot('levels', 'Expand to level'),
+    levels: slot('levels', 'Unfold to level'),
     actions: slot('actions', 'Options'),
   };
 

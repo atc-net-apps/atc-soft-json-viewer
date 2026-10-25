@@ -123,6 +123,56 @@ describe('toggleViewer', () => {
     });
   });
 
+  describe('unfold to level', () => {
+    const root = () => getMountedRoot() as ShadowRoot;
+    const levelButton = (label: string) =>
+      Array.from(root().querySelectorAll<HTMLButtonElement>('.toolbar-levels button')).find((button) => button.textContent === label);
+    const isFolded = (path: string) => root().querySelector(`.row[data-path="${path}"]`)?.closest('.branch')?.classList.contains('collapsed');
+
+    it('unfolds and folds the tree from the toolbar', async () => {
+      page(JSON_PAGE);
+      await toggleViewer(document, 'application/json');
+
+      levelButton('All')?.click();
+      expect(isFolded('$.customer.address')).toBe(false);
+      expect(root().querySelector('.row[data-path="$.customer.address.city"]')).not.toBeNull();
+
+      levelButton('1')?.click();
+      expect(isFolded('$')).toBe(false);
+      expect(isFolded('$.customer')).toBe(true);
+    });
+
+    it('hides the level buttons in the raw view', async () => {
+      page(JSON_PAGE);
+      await toggleViewer(document, 'application/json');
+      const levels = root().querySelector<HTMLElement>('.toolbar-levels');
+      expect(levels?.hidden).toBe(false);
+
+      root().querySelector<HTMLButtonElement>('.toolbar-view [data-value="raw"]')?.click();
+      expect(levels?.hidden).toBe(true);
+
+      root().querySelector<HTMLButtonElement>('.toolbar-view [data-value="tree"]')?.click();
+      expect(levels?.hidden).toBe(false);
+    });
+
+    it('works after starting in the raw view', async () => {
+      await saveSettings({ view: 'raw' });
+      page(JSON_PAGE);
+      await toggleViewer(document, 'application/json');
+      expect(root().querySelector<HTMLElement>('.toolbar-levels')?.hidden).toBe(true);
+
+      root().querySelector<HTMLButtonElement>('.toolbar-view [data-value="tree"]')?.click();
+      levelButton('All')?.click();
+      expect(isFolded('$.customer.address')).toBe(false);
+    });
+
+    it('shows no level buttons for broken JSON', async () => {
+      page('<pre>{"a": 1,}</pre>');
+      await toggleViewer(document, 'application/json');
+      expect(root().querySelector('.toolbar-levels button')).toBeNull();
+    });
+  });
+
   describe('copy value and path', () => {
     const root = () => getMountedRoot() as ShadowRoot;
     const pathText = () => root().querySelector('.status-path')?.textContent;

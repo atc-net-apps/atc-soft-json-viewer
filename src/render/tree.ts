@@ -65,6 +65,33 @@ export function setExpanded(branchElement: Element, expanded: boolean): void {
   toggle?.setAttribute('aria-label', expanded ? 'Collapse' : 'Expand');
 }
 
+/**
+ * Unfolds every object and array above `level` and folds the deeper ones:
+ * 1 = only the top level open, `Infinity` = everything. Children are built only where needed.
+ */
+export function expandToLevel(tree: Element, level: number): void {
+  const rootElement = tree.firstElementChild;
+  const root = rootElement && branches.get(rootElement);
+  if (!rootElement || !root) {
+    return;
+  }
+  // Objects and arrays drawn later, by "Show more" or by unfolding one by hand, follow the new level too.
+  root.options.expandDepth = level;
+  applyLevel(rootElement, level);
+}
+
+function applyLevel(branchElement: Element, level: number): void {
+  const branch = branches.get(branchElement);
+  if (!branch) {
+    return;
+  }
+  setExpanded(branchElement, branch.depth < level);
+  // Folded children that were built earlier are folded too, so unfolding one by hand later shows it at this level.
+  for (const child of branchElement.querySelectorAll(':scope > .children > .branch')) {
+    applyLevel(child, level);
+  }
+}
+
 function onClick(event: Event): void {
   const target = event.target as Element;
 

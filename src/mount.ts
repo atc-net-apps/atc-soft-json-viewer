@@ -2,10 +2,11 @@ import { copyText, valueToText } from './copy';
 import { detectKind } from './detect';
 import { parseDocument, type ParseResult } from './parse';
 import { renderSegmented } from './render/controls';
+import { renderLevelButtons } from './render/levels';
 import { enableSelection } from './render/selection';
 import { renderThemeButton } from './render/theme';
 import { renderStatusBar, renderToolbar } from './render/toolbar';
-import { getRowValue, renderTree } from './render/tree';
+import { expandToLevel, getRowValue, renderTree } from './render/tree';
 import css from './render/viewer.css?inline';
 import { createViews, renderRaw } from './render/views';
 import { loadSettings, saveSettings, type Settings } from './settings';
@@ -126,6 +127,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
   const content = document.createElement('main');
   content.className = 'content';
   let selected: HTMLElement | null = null;
+  let tree: HTMLElement | null = null;
   const statusBar = renderStatusBar({ contentType, bytes: new Blob([text]).size }, async (what) => {
     if (!selected) {
       return false;
@@ -140,7 +142,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
       if (!result.ok) {
         return renderParseError(result);
       }
-      const tree = renderTree(result.value, {
+      tree = renderTree(result.value, {
         expandDepth: settings.unfoldDepth,
         links: settings.links,
         counts: settings.counts,
@@ -166,6 +168,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
     initialView,
     (view) => {
       views.show(view);
+      toolbar.slots.levels.hidden = view !== 'tree';
       // The selected path only means something in the tree.
       statusBar.setPath(view === 'tree' && selected ? (selected.dataset.path ?? null) : null);
       // Remembered for the next page; failing to save must not break the viewer.
@@ -173,6 +176,18 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
     },
   );
   toolbar.slots.view.append(viewSwitch.element);
+
+  // Only a tree can be unfolded: none for broken JSON, and hidden in the raw view.
+  if (result.ok) {
+    toolbar.slots.levels.append(
+      renderLevelButtons((level) => {
+        if (tree) {
+          expandToLevel(tree, level);
+        }
+      }),
+    );
+    toolbar.slots.levels.hidden = initialView !== 'tree';
+  }
 
   toolbar.slots.actions.append(
     renderThemeButton(host, settings.theme, (theme) => {
