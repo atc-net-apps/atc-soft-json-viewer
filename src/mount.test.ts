@@ -378,6 +378,88 @@ describe('toggleViewer', () => {
     });
   });
 
+  describe('sort keys A–Z', () => {
+    const SORT_PAGE = '<pre>{"status": "Shipped", "orderId": "A-1001", "customer": {"name": "Contoso", "id": 4711}}</pre>';
+    const root = () => getMountedRoot() as ShadowRoot;
+    const sortButton = () =>
+      Array.from(root().querySelectorAll<HTMLButtonElement>('.toolbar-actions button')).find((button) => button.textContent === 'A–Z');
+    const topKeys = () =>
+      Array.from(root().querySelectorAll('.tree > .branch > .children > .row > .key, .tree > .branch > .children > .branch > .branch-head > .key'), (key) =>
+        key.textContent,
+      );
+
+    it('sorts the keys, keeps the selected line and remembers the choice', async () => {
+      page(SORT_PAGE);
+      await toggleViewer(document, 'application/json');
+      root().querySelector<HTMLElement>('.row[data-path="$.customer.id"]')?.click();
+
+      sortButton()?.click();
+
+      expect(sortButton()?.getAttribute('aria-pressed')).toBe('true');
+      expect(topKeys()).toEqual(['"customer"', '"orderId"', '"status"']);
+      expect(root().querySelector('.row.selected')?.getAttribute('data-path')).toBe('$.customer.id');
+      expect(root().querySelector('.status-path')?.textContent).toBe('$.customer.id');
+      await vi.waitFor(async () => expect((await loadSettings()).sortKeys).toBe(true));
+    });
+
+    it('opens sorted when that was the last choice, and leaves Raw as the server sent it', async () => {
+      await saveSettings({ sortKeys: true });
+      page(SORT_PAGE);
+      await toggleViewer(document, 'application/json');
+
+      expect(topKeys()).toEqual(['"customer"', '"orderId"', '"status"']);
+      root().querySelector<HTMLButtonElement>('.toolbar-view [data-value="raw"]')?.click();
+      expect(root().querySelector('.raw')?.textContent).toBe(
+        '{"status": "Shipped", "orderId": "A-1001", "customer": {"name": "Contoso", "id": 4711}}',
+      );
+    });
+
+    it('copies values in the order the server sent', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      vi.stubGlobal('navigator', { clipboard: { writeText } });
+      vi.stubGlobal('isSecureContext', true);
+      await saveSettings({ sortKeys: true });
+      page(SORT_PAGE);
+      await toggleViewer(document, 'application/json');
+
+      root().querySelector<HTMLElement>('.row[data-path="$.customer"]')?.click();
+      root().querySelector<HTMLButtonElement>('[data-copy="value"]')?.click();
+
+      await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith('{\n  "name": "Contoso",\n  "id": 4711\n}'));
+      vi.unstubAllGlobals();
+    });
+
+    it('turns A–Z off in the raw view, which always shows what the server sent', async () => {
+      page(SORT_PAGE);
+      await toggleViewer(document, 'application/json');
+      const view = (name: string) => root().querySelector<HTMLButtonElement>(`.toolbar-view [data-value="${name}"]`)?.click();
+
+      view('raw');
+      expect(sortButton()?.disabled).toBe(true);
+      view('table');
+      expect(sortButton()?.disabled).toBe(false);
+      view('tree');
+      expect(sortButton()?.disabled).toBe(false);
+    });
+
+    it('starts with A–Z turned off when the raw view was the last choice', async () => {
+      await saveSettings({ view: 'raw' });
+      page(SORT_PAGE);
+      await toggleViewer(document, 'application/json');
+      expect(sortButton()?.disabled).toBe(true);
+    });
+
+    it('shows table columns A–Z', async () => {
+      await saveSettings({ sortKeys: true });
+      page('<pre>[{"sku": "A-1", "name": "Widget", "id": 1}]</pre>');
+      await toggleViewer(document, 'application/json');
+
+      root().querySelector<HTMLButtonElement>('.toolbar-view [data-value="table"]')?.click();
+
+      expect(Array.from(root().querySelectorAll('th'), (th) => th.textContent)).toEqual(['#', 'id', 'name', 'sku']);
+    });
+  });
+
   describe('copy value and path', () => {
     const root = () => getMountedRoot() as ShadowRoot;
     const pathText = () => root().querySelector('.status-path')?.textContent;

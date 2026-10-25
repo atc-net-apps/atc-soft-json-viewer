@@ -7,6 +7,16 @@ describe('renderToolbar', () => {
     expect(element.querySelector('.brand')?.textContent).toBe('ATC JSON Viewer');
     expect(Object.values(slots).every((slot) => element.contains(slot) && slot.getAttribute('aria-label'))).toBe(true);
   });
+
+  it('puts the view switch on the left and the actions on the right, with room between them', () => {
+    const { element, slots } = renderToolbar();
+    const order = Array.from(element.children);
+    const spacer = element.querySelector('.toolbar-spacer') as Element;
+
+    expect(order.indexOf(slots.view)).toBeLessThan(order.indexOf(spacer));
+    expect(order.indexOf(spacer)).toBeLessThan(order.indexOf(slots.search));
+    expect(order.at(-1)).toBe(slots.actions);
+  });
 });
 
 describe('renderStatusBar', () => {

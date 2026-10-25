@@ -2,7 +2,7 @@ import { copyText, valueToText } from './copy';
 import { detectKind } from './detect';
 import { parseDocument } from './parse';
 import { ROOT_PATH } from './path';
-import { renderSegmented } from './render/controls';
+import { renderSegmented, renderToggle } from './render/controls';
 import { renderParseError } from './render/error';
 import { renderLevelButtons } from './render/levels';
 import { renderSearch } from './render/search';
@@ -10,7 +10,7 @@ import { enableSelection, type Selection } from './render/selection';
 import { renderNoTable, renderTable } from './render/table';
 import { renderThemeButton } from './render/theme';
 import { renderStatusBar, renderToolbar } from './render/toolbar';
-import { expandToLevel, getRowKeys, getRowValue, renderTree, revealPath } from './render/tree';
+import { expandToLevel, getRowKeys, getRowValue, renderTree, revealPath, setSortKeys } from './render/tree';
 import css from './render/viewer.css?inline';
 import { createViews, renderRaw } from './render/views';
 import type { Key } from './search';
@@ -144,6 +144,10 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
 
   const result = parseDocument(text);
   let selection: Selection | null = null;
+  let sortKeys = settings.sortKeys;
+  let sortButton: HTMLButtonElement | null = null;
+  // Where the table now shown was looked up from, to draw it again A–Z.
+  let tableShown: { start: Key[]; from?: string } | null = null;
   const tableView = document.createElement('div');
   // The path the table was last looked up from, so it is only looked up again when the selection changes.
   let tableFrom: string | null = null;
@@ -159,6 +163,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
         counts: settings.counts,
         timestamps: settings.timestamps,
         jwt: settings.jwt,
+        sortKeys,
       });
       selection = enableSelection(tree, (row) => {
         selected = row;
@@ -191,10 +196,11 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
     if (!result.ok) {
       return;
     }
+    tableShown = { start, from };
     const table = findTable(result.value, start);
     tableView.replaceChildren(
       table
-        ? renderTable(table, { links: settings.links, onOpen: openInTree, onTable: (keys) => drawTable(keys), from })
+        ? renderTable(table, { links: settings.links, onOpen: openInTree, onTable: (keys) => drawTable(keys), from, sortKeys })
         : renderNoTable(),
     );
   }
@@ -223,6 +229,10 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
 
   function showView(view: Settings['view']): void {
     backToTable.hidden = true;
+    // Raw is always exactly what the server sent.
+    if (sortButton) {
+      sortButton.disabled = view === 'raw';
+    }
     if (view === 'table') {
       refreshTable();
     }
@@ -252,10 +262,33 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
 
   // None for broken JSON, which has nothing to search or unfold.
   if (result.ok) {
-    const search = renderSearch(() => tree, result.value, { onSelect: (line) => selection?.select(line) });
+    const search = renderSearch(() => tree, result.value, {
+      onSelect: (line) => selection?.select(line),
+      sortKeys: () => sortKeys,
+    });
     toolbar.slots.search.append(search.element);
     // Under the toolbar's controls, so the list stays in view while the tree scrolls.
     toolbar.element.append(search.results);
+
+    sortButton = renderToggle('A–Z', 'Sort keys A–Z (display only: Raw and Copy value keep the original order)', sortKeys, (sorted) => {
+      sortKeys = sorted;
+      if (tree) {
+        // The same line stays selected; its keys don't depend on the order.
+        const keys = selected ? getRowKeys(selected) : null;
+        setSortKeys(tree, sorted);
+        const line = keys && revealPath(tree, keys);
+        if (line && selection) {
+          selection.select(line);
+        }
+        search.refresh();
+      }
+      // The same table, with its columns in the new order.
+      if (tableShown) {
+        drawTable(tableShown.start, tableShown.from);
+      }
+      saveSettings({ sortKeys: sorted }).catch(() => {});
+    });
+    toolbar.slots.actions.append(sortButton);
     toolbar.slots.levels.append(
       renderLevelButtons((level) => {
         if (tree) {

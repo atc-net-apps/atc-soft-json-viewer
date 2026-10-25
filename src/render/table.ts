@@ -1,5 +1,6 @@
 import { BigNumber } from '../parse';
 import { displayText, type Key } from '../search';
+import { compareKeys } from '../sort';
 import { isTable, type TableData, tableColumns } from '../table';
 import { countLabel, isWebUrl } from './tree';
 
@@ -14,6 +15,8 @@ export interface TableOptions {
   onTable?: (keys: Key[]) => void;
   /** The path of the selected line the table was looked up from, for the note when it was found elsewhere. */
   from?: string;
+  /** Columns A–Z instead of in the order the keys first appear. */
+  sortKeys?: boolean;
 }
 
 /** What the cells need: whether to make links, and what clicking does. */
@@ -28,7 +31,7 @@ type CellActions = Required<Pick<TableOptions, 'links' | 'onOpen' | 'onTable'>>;
 export function renderTable(table: TableData, options: TableOptions = {}): HTMLElement {
   const { links = true, pageSize = 500, onOpen = () => {}, onTable = () => {} } = options;
   const actions: CellActions = { links, onOpen, onTable };
-  const columns = tableColumns(table.rows);
+  const columns = options.sortKeys ? tableColumns(table.rows).sort(compareKeys) : tableColumns(table.rows);
 
   const element = document.createElement('div');
   element.className = 'table-view';

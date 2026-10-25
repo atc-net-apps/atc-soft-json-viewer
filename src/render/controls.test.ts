@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { renderSegmented } from './controls';
+import { renderSegmented, renderToggle } from './controls';
 
 function setup() {
   const onChange = vi.fn();
@@ -15,6 +15,25 @@ function setup() {
   const button = (value: string) => control.element.querySelector<HTMLButtonElement>(`[data-value="${value}"]`);
   return { control, onChange, button };
 }
+
+describe('renderToggle', () => {
+  it('turns on and off when clicked, and reports it', () => {
+    const onChange = vi.fn();
+    const button = renderToggle('A–Z', 'Sort keys A–Z', false, onChange);
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+
+    button.click();
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(onChange).toHaveBeenLastCalledWith(true);
+
+    button.click();
+    expect(onChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('starts pressed when asked to', () => {
+    expect(renderToggle('A–Z', 'Sort keys A–Z', true, () => {}).getAttribute('aria-pressed')).toBe('true');
+  });
+});
 
 describe('renderSegmented', () => {
   it('marks the selected option as pressed', () => {

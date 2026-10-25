@@ -1,5 +1,6 @@
 import { BigNumber } from './parse';
 import { childPath, ROOT_PATH } from './path';
+import { objectEntries } from './sort';
 
 export type Key = string | number;
 
@@ -42,8 +43,11 @@ export function displayText(value: unknown): string | null {
   }
 }
 
-/** Finds every key and value containing `term`, in document order. Objects and arrays match only by their key. */
-export function findMatches(value: unknown, term: string): { matches: Match[]; limited: boolean } {
+/**
+ * Finds every key and value containing `term`, in the order the tree shows them (A–Z by key when
+ * `sortKeys`). Objects and arrays match only by their key.
+ */
+export function findMatches(value: unknown, term: string, sortKeys = false): { matches: Match[]; limited: boolean } {
   const matches: Match[] = [];
   if (term === '') {
     return { matches, limited: false };
@@ -67,7 +71,7 @@ export function findMatches(value: unknown, term: string): { matches: Match[]; l
     if (current !== null && typeof current === 'object' && !(current instanceof BigNumber)) {
       const children: [Key, unknown][] = Array.isArray(current)
         ? current.map((child, index): [Key, unknown] => [index, child])
-        : Object.entries(current);
+        : objectEntries(current, sortKeys);
       for (let i = children.length - 1; i >= 0; i--) {
         const [key, child] = children[i] as [Key, unknown];
         stack.push({ value: child, key, parent: visit });

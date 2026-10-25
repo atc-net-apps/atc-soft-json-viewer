@@ -18,6 +18,8 @@ const VALUE = ':scope > .string, :scope > .number, :scope > .boolean, :scope > .
 export interface SearchOptions {
   /** Milliseconds to wait after typing before searching. */
   delay?: number;
+  /** Whether keys are shown A–Z, so "next match" goes down the screen. */
+  sortKeys?: () => boolean;
   /** Selects a line in the tree; used for query results, so the status bar can copy them. */
   onSelect?: (line: HTMLElement) => void;
 }
@@ -27,6 +29,8 @@ export interface SearchBox {
   element: HTMLElement;
   /** The list of query results (or the query's error), shown under the toolbar while a query is typed. */
   results: HTMLElement;
+  /** Searches again for the same text, after the tree was drawn again (for example A–Z). */
+  refresh(): void;
 }
 
 /**
@@ -36,7 +40,7 @@ export interface SearchBox {
  * `getTree` returns the tree once it is drawn.
  */
 export function renderSearch(getTree: () => HTMLElement | null, value: unknown, options: SearchOptions = {}): SearchBox {
-  const { delay = TYPING_DELAY, onSelect = () => {} } = options;
+  const { delay = TYPING_DELAY, onSelect = () => {}, sortKeys = () => false } = options;
 
   const element = document.createElement('div');
   element.className = 'search';
@@ -91,7 +95,7 @@ export function renderSearch(getTree: () => HTMLElement | null, value: unknown, 
       showResults(outcome, term.trim());
     } else {
       setSearch(tree, term);
-      ({ matches, limited } = findMatches(value, term));
+      ({ matches, limited } = findMatches(value, term, sortKeys()));
       for (const match of matches.slice(0, REVEAL_LIMIT)) {
         revealPath(tree, match.keys, false);
       }
@@ -218,7 +222,13 @@ export function renderSearch(getTree: () => HTMLElement | null, value: unknown, 
   next.addEventListener('click', () => go(current + 1));
 
   update();
-  return { element, results };
+  function refresh(): void {
+    const term = searched;
+    searched = '';
+    search(term);
+  }
+
+  return { element, results, refresh };
 }
 
 /** One line for a result: plain values as JSON, objects and arrays by their size. */

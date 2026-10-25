@@ -41,6 +41,11 @@ describe('renderTable', () => {
     );
   });
 
+  it('shows the columns A–Z when keys are sorted', () => {
+    const { headers } = setup(ITEMS, { sortKeys: true });
+    expect(headers()).toEqual(['#', 'image', 'quantity', 'size', 'sku', 'tags']);
+  });
+
   it('says what the table is in its caption', () => {
     const { element } = setup();
     expect(element.querySelector('caption')?.textContent).toBe('$ › items · 2 rows · 5 columns');

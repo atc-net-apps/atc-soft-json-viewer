@@ -121,7 +121,7 @@
 }
 
 .brand {
-  margin-right: auto;
+  margin-right: 8px;
   color: var(--muted);
   font-weight: 600;
 }
@@ -130,6 +130,10 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.toolbar-spacer {
+  flex: 1;
 }
 
 /* Groups stay hidden until a feature puts a control in them. */

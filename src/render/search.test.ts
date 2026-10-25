@@ -13,7 +13,7 @@ const ORDERS = {
 function setup(value: unknown = ORDERS, delay = 0) {
   const tree = renderTree(value);
   const onSelect = vi.fn();
-  const { element: box, results } = renderSearch(() => tree, value, { delay, onSelect });
+  const { element: box, results, refresh } = renderSearch(() => tree, value, { delay, onSelect });
   const input = box.querySelector('input') as HTMLInputElement;
   const press = (key: string, shiftKey = false) => input.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey, bubbles: true }));
   const type = (text: string) => {
@@ -27,7 +27,7 @@ function setup(value: unknown = ORDERS, delay = 0) {
   };
   const count = () => box.querySelector('.search-count')?.textContent;
   const current = () => tree.querySelector<HTMLElement>('.current-match')?.dataset.path;
-  return { tree, box, results, onSelect, input, press, type, search, count, current };
+  return { tree, box, results, refresh, onSelect, input, press, type, search, count, current };
 }
 
 describe('renderSearch', () => {
@@ -282,6 +282,18 @@ describe('renderSearch', () => {
       expect(results.querySelector('.query-more')?.textContent).toContain('Enter and ↓ go through all of them');
       expect(count()).toBe(`1 of ${LISTED_RESULTS + 20}`);
     });
+  });
+
+  it('searches again for the same text when asked to, and goes to the first match', () => {
+    const { search, press, refresh, count, current } = setup();
+    search('sku');
+    press('Enter');
+    expect(count()).toBe('2 of 3');
+
+    refresh();
+
+    expect(count()).toBe('1 of 3');
+    expect(current()).toBe('$.orders[0].items[0].sku');
   });
 
   it('shows "+" when there are more matches than it counts', () => {

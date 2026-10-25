@@ -11,6 +11,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - 🧭 **JSONPath query**: type `$.items[*].sku` in the search box to list just those values
 - 📄 **Raw / Tree toggle**: switch to the exact text the server sent, and back
 - 📑 **Table view**: see a list of objects as rows and columns
+- 🔤 **Sort keys A–Z**: show keys alphabetically, while Raw and copying keep the original order
 - 📋 **Copy value & path**: click any line to see its JSON path, and copy the path or the value
 - 🔗 **Clickable links**: web addresses in values open in a new tab
 - 🔢 **Item counts**: every object and array shows how many keys or items it has
@@ -123,6 +124,12 @@ The **Raw** button in the toolbar's **Tree | Table | Raw** switch shows the resp
 - Big lists show 500 rows at a time, with a **Show more** button.
 
 The viewer remembers if you prefer the table, like it does for Raw.
+
+### 🔤 Sort keys A–Z
+
+The **A–Z** button in the toolbar shows every object's keys alphabetically, which makes a key easy to find in a big object. Numbers in keys sort as numbers (`item2` before `item10`), and upper and lower case sort together. Arrays keep their order, because there it means something.
+
+Only the display changes: what you had unfolded stays unfolded, the selected line stays selected, search goes through the matches from top to bottom, and the table shows its columns A–Z. **Raw**, **Copy value** and JSONPath results keep the order the server sent, so the button is turned off in Raw. The viewer remembers the choice.
 
 ### 📋 Copy value & path
 

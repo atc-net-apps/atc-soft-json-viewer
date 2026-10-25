@@ -59,6 +59,12 @@ describe('findMatches', () => {
     expect(paths({ a: 'a.b', b: 'axb' }, 'a.b')).toEqual(['value $.a']);
   });
 
+  it('finds matches in A–Z order when the keys are shown A–Z', () => {
+    const order = { zip: '8000', city: 'Aarhus', area: 'Jylland' };
+    expect(paths(order, 'a')).toEqual(['value $.city', 'key $.area', 'value $.area']);
+    expect(findMatches(order, 'a', true).matches.map((match) => match.path)).toEqual(['$.area', '$.area', '$.city']);
+  });
+
   it('gives the keys on the way to each match', () => {
     const [match] = findMatches(ORDER, 'B-200').matches;
     expect(match?.keys).toEqual(['items', 1, 'sku']);

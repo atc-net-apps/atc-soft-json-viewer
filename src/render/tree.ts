@@ -2,6 +2,7 @@ import { type DecodedJwt, decodeJwt } from '../jwt';
 import { BigNumber } from '../parse';
 import { childPath, ROOT_PATH } from '../path';
 import { type Key, searchPattern } from '../search';
+import { objectEntries } from '../sort';
 import { describeTimestamp, timestampFrom } from '../timestamps';
 
 export interface TreeOptions {
@@ -19,10 +20,12 @@ export interface TreeOptions {
   timestamps?: boolean;
   /** Add a JWT chip to JSON Web Tokens, which shows their decoded header and payload. */
   jwt?: boolean;
+  /** Show object keys A–Z instead of in the server's order. Only the display changes. */
+  sortKeys?: boolean;
 }
 
 /** One tree's options. Lines drawn later read them too, so changing them affects what is drawn next. */
-type TreeState = Required<TreeOptions> & { pattern: RegExp | null };
+type TreeState = Required<TreeOptions> & { pattern: RegExp | null; value: unknown };
 
 /** What a folded or unfolded object/array needs to draw its children later. */
 interface Branch {
@@ -42,6 +45,7 @@ const DEFAULTS: Required<TreeOptions> = {
   search: '',
   timestamps: true,
   jwt: true,
+  sortKeys: false,
 };
 
 // The elements that show a key or a value, which search highlights.
@@ -71,7 +75,7 @@ const tokens = new WeakMap<Element, DecodedJwt>();
 export function renderTree(value: unknown, options: TreeOptions = {}): HTMLElement {
   const tree = document.createElement('div');
   tree.className = 'tree';
-  const state: TreeState = { ...DEFAULTS, ...options, pattern: null };
+  const state: TreeState = { ...DEFAULTS, ...options, pattern: null, value };
   state.pattern = state.search ? searchPattern(state.search) : null;
   trees.set(tree, state);
   const root = renderEntry(null, value, ROOT_PATH, 0, true, state);
@@ -113,8 +117,12 @@ export function revealPath(tree: Element, keys: readonly Key[], allPages = true)
       return null;
     }
     setExpanded(element, true);
-    // The position in the drawn order, which is the order of `entries`.
-    const index = entriesOf(branch).findIndex(([entryKey]) => entryKey === key);
+    // The position in the drawn order, which is the order of `entries` (for arrays, the index itself).
+    const index = Array.isArray(branch.value)
+      ? typeof key === 'number' && key < branch.value.length
+        ? key
+        : -1
+      : entriesOf(branch).findIndex(([entryKey]) => entryKey === key);
     if (index < 0) {
       return null;
     }
@@ -130,6 +138,45 @@ export function revealPath(tree: Element, keys: readonly Key[], allPages = true)
     return null;
   }
   return branches.has(element) ? element.querySelector<HTMLElement>(':scope > .branch-head') : (element as HTMLElement);
+}
+
+/**
+ * Draws the tree again with object keys A–Z, or in the server's order again. What was unfolded, and
+ * unfolded all the way down, stays so. The values themselves are not changed.
+ */
+export function setSortKeys(tree: Element, sorted: boolean): void {
+  const state = trees.get(tree);
+  if (!state || state.sortKeys === sorted) {
+    return;
+  }
+  // This tree's own objects and arrays, not those of decoded tokens inside it. Keys are found
+  // before redrawing: they don't depend on the order, but their position does.
+  const own = Array.from(tree.querySelectorAll('.branch')).filter((branch) => branch.closest('.tree') === tree);
+  const keysOf = (branch: Element) => getRowKeys(branch.querySelector(':scope > .branch-head') as Element);
+  const unfolded = own.filter((branch) => !branch.classList.contains('collapsed')).map(keysOf);
+  const deep = own.filter((branch) => branch.classList.contains('deep')).map(keysOf);
+
+  state.sortKeys = sorted;
+  // Nothing unfolds by itself while the old state is put back.
+  const level = state.expandDepth;
+  state.expandDepth = 0;
+  const root = renderEntry(null, state.value, ROOT_PATH, 0, true, state);
+  markEntry(root, state.pattern);
+  tree.replaceChildren(root);
+  for (const keys of unfolded) {
+    const head = revealPath(tree, keys);
+    if (head?.parentElement) {
+      setExpanded(head.parentElement, true);
+    }
+  }
+  for (const keys of deep) {
+    const branchElement = revealPath(tree, keys)?.parentElement;
+    if (branchElement) {
+      branchElement.classList.add('deep');
+      updateLabels(branchElement);
+    }
+  }
+  state.expandDepth = level;
 }
 
 /** The JSON value a row shows (for an object or array: the whole value), or `undefined` for rows without one. */
@@ -398,7 +445,7 @@ function renderBranch(
 function entriesOf(branch: Branch): [Key, unknown][] {
   branch.entries ??= Array.isArray(branch.value)
     ? branch.value.map((child, index): [Key, unknown] => [index, child])
-    : Object.entries(branch.value);
+    : objectEntries(branch.value, branch.options.sortKeys);
   return branch.entries;
 }
 

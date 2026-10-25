@@ -11,6 +11,7 @@ import {
   setExpanded,
   setExpandedDeep,
   setSearch,
+  setSortKeys,
 } from './tree';
 
 const row = (tree: HTMLElement, path: string) => tree.querySelector<HTMLElement>(`.row[data-path="${path}"]`);
@@ -454,6 +455,72 @@ describe('expandToLevel', () => {
     const tree = renderTree(42);
     expandToLevel(tree, 2);
     expect(rowText(tree, '$')).toBe('42');
+  });
+});
+
+describe('setSortKeys', () => {
+  const ORDER = { status: 'Shipped', orderId: 'A-1001', customer: { name: 'Contoso', id: 4711 }, items: [{ sku: 'B' }, { sku: 'A' }] };
+  const keys = (tree: HTMLElement, path: string) =>
+    Array.from(branchOf(tree, path).querySelectorAll(':scope > .children > .row > .key, :scope > .children > .branch > .branch-head > .key'), (key) =>
+      key.textContent,
+    );
+
+  it('shows object keys A–Z, and arrays in their own order', () => {
+    const tree = renderTree(ORDER, { sortKeys: true, expandDepth: 3 });
+    expect(keys(tree, '$')).toEqual(['"customer"', '"items"', '"orderId"', '"status"']);
+    expect(rowText(tree, '$.items[0].sku')).toBe('"sku": "B"');
+    expect(rowText(tree, '$.items[1].sku')).toBe('"sku": "A"');
+  });
+
+  it('puts the commas where JSON puts them in the new order', () => {
+    const tree = renderTree({ b: 1, a: 2 }, { sortKeys: true });
+    expect(rowText(tree, '$.a')).toBe('"a": 2,');
+    expect(rowText(tree, '$.b')).toBe('"b": 1');
+  });
+
+  it('switches between A–Z and the original order', () => {
+    const tree = renderTree(ORDER);
+    expect(keys(tree, '$')).toEqual(['"status"', '"orderId"', '"customer"', '"items"']);
+
+    setSortKeys(tree, true);
+    expect(keys(tree, '$')).toEqual(['"customer"', '"items"', '"orderId"', '"status"']);
+
+    setSortKeys(tree, false);
+    expect(keys(tree, '$')).toEqual(['"status"', '"orderId"', '"customer"', '"items"']);
+  });
+
+  it('keeps unfolded what was unfolded, and folded what was folded', () => {
+    const tree = renderTree(ORDER, { expandDepth: 2 });
+    setExpanded(branchOf(tree, '$.items'), false);
+
+    setSortKeys(tree, true);
+
+    expect(branchOf(tree, '$.customer').classList.contains('collapsed')).toBe(false);
+    expect(branchOf(tree, '$.items').classList.contains('collapsed')).toBe(true);
+    expect(branchOf(tree, '$.customer').querySelector(':scope > .children > .row .key')?.textContent).toBe('"id"');
+  });
+
+  it('keeps an object unfolded all the way down', () => {
+    const tree = renderTree(ORDER);
+    setExpandedDeep(branchOf(tree, '$.items'), true);
+
+    setSortKeys(tree, true);
+
+    expect(branchOf(tree, '$.items').classList.contains('deep')).toBe(true);
+    expect(branchOf(tree, '$.items[1]').classList.contains('collapsed')).toBe(false);
+  });
+
+  it('keeps the values and their paths, so copying gives what the server sent', () => {
+    const tree = renderTree(ORDER, { sortKeys: true });
+    expect(Object.keys(getRowValue(row(tree, '$') as HTMLElement) as object)).toEqual(['status', 'orderId', 'customer', 'items']);
+    expect(getRowKeys(row(tree, '$.status') as HTMLElement)).toEqual(['status']);
+    expect(revealPath(tree, ['customer', 'id'])).toBe(row(tree, '$.customer.id'));
+  });
+
+  it('keeps search highlights', () => {
+    const tree = renderTree(ORDER, { search: 'contoso', expandDepth: 2 });
+    setSortKeys(tree, true);
+    expect(row(tree, '$.customer.name')?.querySelector('mark')?.textContent).toBe('Contoso');
   });
 });
 

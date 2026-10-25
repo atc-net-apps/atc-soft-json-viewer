@@ -9,6 +9,22 @@ export interface Segmented<T extends string> {
   setSelected(value: T): void;
 }
 
+/** One button that is pressed or not, e.g. A–Z. */
+export function renderToggle(label: string, title: string, pressed: boolean, onChange: (pressed: boolean) => void) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'button';
+  button.textContent = label;
+  button.title = title;
+  button.setAttribute('aria-pressed', String(pressed));
+  button.addEventListener('click', () => {
+    const next = button.getAttribute('aria-pressed') !== 'true';
+    button.setAttribute('aria-pressed', String(next));
+    onChange(next);
+  });
+  return button;
+}
+
 /** A row of joined toggle buttons where exactly one is pressed, e.g. Tree | Raw. */
 export function renderSegmented<T extends string>(
   label: string,

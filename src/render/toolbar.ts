@@ -49,7 +49,11 @@ export function renderToolbar(): Toolbar {
     actions: slot('actions', 'Options'),
   };
 
-  element.append(brand, slots.view, slots.search, slots.levels, slots.actions);
+  // The view switch sits on the left and the actions on the right, with room between them, so
+  // neither moves when the search and level controls are hidden (in the table and raw views).
+  const spacer = document.createElement('span');
+  spacer.className = 'toolbar-spacer';
+  element.append(brand, slots.view, spacer, slots.search, slots.levels, slots.actions);
   return { element, slots };
 }
 
