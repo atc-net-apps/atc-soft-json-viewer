@@ -13,6 +13,7 @@
   --muted: #5a6575;
   --accent: #0d6f78;
   --accent-fg: #ffffff;
+  --accent-soft: #dbeeee;
   --error: #b42318;
   --error-soft: #fdebe9;
   --syntax-key: #7a3e9d;
@@ -45,6 +46,7 @@
     --muted: #9aa4b2;
     --accent: #4fc3c9;
     --accent-fg: #06272a;
+    --accent-soft: #173a3d;
     --error: #ff8a80;
     --error-soft: #3a1d1b;
     --syntax-key: #cf9cf2;
@@ -66,6 +68,7 @@
   --muted: #9aa4b2;
   --accent: #4fc3c9;
   --accent-fg: #06272a;
+  --accent-soft: #173a3d;
   --error: #ff8a80;
   --error-soft: #3a1d1b;
   --syntax-key: #cf9cf2;
@@ -201,8 +204,29 @@
 
 .status-path {
   margin-left: auto;
+  cursor: text;
+  user-select: all;
   font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
   overflow-wrap: anywhere;
+}
+
+/* Copy path / Copy value next to the selected path. */
+.status-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.button-small {
+  padding: 1px 7px;
+  font-size: 11px;
+}
+
+/* The hidden text box used to copy on pages without the Clipboard API. */
+.copy-buffer {
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  opacity: 0;
 }
 
 /* ---------- Tree ---------- */
@@ -221,6 +245,15 @@
 
 .row:hover {
   background: var(--bg-hover);
+}
+
+.row[data-path] {
+  cursor: pointer;
+}
+
+.row.selected,
+.row.selected:hover {
+  background: var(--accent-soft);
 }
 
 .key {

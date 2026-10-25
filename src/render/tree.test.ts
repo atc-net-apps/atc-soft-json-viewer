@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BigNumber } from '../parse';
-import { renderTree, setExpanded } from './tree';
+import { getRowValue, renderTree, setExpanded } from './tree';
 
 const row = (tree: HTMLElement, path: string) => tree.querySelector<HTMLElement>(`.row[data-path="${path}"]`);
 const rowText = (tree: HTMLElement, path: string) => row(tree, path)?.textContent;
@@ -117,5 +117,23 @@ describe('renderTree', () => {
       expect(rowText(tree, '$[1199]')).toBe('1199');
       expect(rowText(tree, '$[499]')).toBe('499,');
     });
+  });
+});
+
+describe('getRowValue', () => {
+  it('returns the value behind each line', () => {
+    const value = { a: 1, o: { b: [true] }, e: [] };
+    const tree = renderTree(value, { expandDepth: 3 });
+
+    expect(getRowValue(row(tree, '$') as HTMLElement)).toBe(value);
+    expect(getRowValue(row(tree, '$.a') as HTMLElement)).toBe(1);
+    expect(getRowValue(row(tree, '$.o') as HTMLElement)).toEqual({ b: [true] });
+    expect(getRowValue(row(tree, '$.o.b[0]') as HTMLElement)).toBe(true);
+    expect(getRowValue(row(tree, '$.e') as HTMLElement)).toEqual([]);
+  });
+
+  it('returns nothing for closing-bracket lines', () => {
+    const tree = renderTree({ o: { b: 1 } }, { expandDepth: 2 });
+    expect(getRowValue(tree.querySelector('.branch-tail') as HTMLElement)).toBeUndefined();
   });
 });

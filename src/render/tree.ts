@@ -24,6 +24,8 @@ const DEFAULTS: Required<TreeOptions> = { expandDepth: 1, pageSize: 500 };
 
 // Keeps each branch element's data without putting it in the DOM.
 const branches = new WeakMap<Element, Branch>();
+// The JSON value behind each row that has a path, for copying.
+const rowValues = new WeakMap<Element, unknown>();
 
 /**
  * Draws a JSON value as a collapsible tree.
@@ -37,6 +39,11 @@ export function renderTree(value: unknown, options: TreeOptions = {}): HTMLEleme
   tree.append(renderEntry(null, value, ROOT_PATH, 0, true, { ...DEFAULTS, ...options }));
   tree.addEventListener('click', onClick);
   return tree;
+}
+
+/** The JSON value a row shows (for an object or array: the whole value), or `undefined` for rows without one. */
+export function getRowValue(row: Element): unknown {
+  return rowValues.get(row);
 }
 
 /** Folds or unfolds a branch (a `.branch` element), building its children the first time. */
@@ -89,6 +96,7 @@ function renderEntry(
     return renderBranch(key, value, path, depth, isLast, options);
   }
   const row = createRow(path, depth);
+  rowValues.set(row, value);
   appendKey(row, key);
   row.append(renderPrimitive(value));
   if (!isLast) {
@@ -110,6 +118,7 @@ function renderBranch(
 
   if (isEmpty(value)) {
     const row = createRow(path, depth);
+    rowValues.set(row, value);
     appendKey(row, key);
     row.append(span('bracket', open + close));
     if (comma) {
@@ -122,6 +131,7 @@ function renderBranch(
   branchElement.className = 'branch collapsed';
 
   const head = createRow(path, depth);
+  rowValues.set(head, value);
   head.classList.add('branch-head');
   const toggle = document.createElement('button');
   toggle.type = 'button';

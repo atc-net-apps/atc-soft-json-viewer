@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { formatBytes, renderStatusBar, renderToolbar } from './toolbar';
 
 describe('renderToolbar', () => {
@@ -10,15 +10,39 @@ describe('renderToolbar', () => {
 });
 
 describe('renderStatusBar', () => {
-  it('shows the content type, the size and the selected path', () => {
+  it('shows the content type, the size and the selected path with copy buttons', () => {
     const statusBar = renderStatusBar({ contentType: 'application/problem+json', bytes: 2000 });
-    expect(statusBar.element.textContent).toBe('application/problem+json2.0 KB');
+    const text = (selector: string) => statusBar.element.querySelector(selector)?.textContent;
+    const actions = () => statusBar.element.querySelector<HTMLElement>('.status-actions');
+    expect(text('.status-type')).toBe('application/problem+json');
+    expect(text('.status-size')).toBe('2.0 KB');
+    expect(actions()?.hidden).toBe(true);
 
     statusBar.setPath('$.items[0].sku');
-    expect(statusBar.element.querySelector('.status-path')?.textContent).toBe('$.items[0].sku');
+    expect(text('.status-path')).toBe('$.items[0].sku');
+    expect(actions()?.hidden).toBe(false);
 
     statusBar.setPath(null);
-    expect(statusBar.element.querySelector('.status-path')?.textContent).toBe('');
+    expect(text('.status-path')).toBe('');
+    expect(actions()?.hidden).toBe(true);
+  });
+
+  it('says whether copying worked, then shows the label again', async () => {
+    vi.useFakeTimers();
+    const onCopy = vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    const statusBar = renderStatusBar({ contentType: 'application/json', bytes: 2 }, onCopy);
+    const button = statusBar.element.querySelector<HTMLButtonElement>('[data-copy="value"]') as HTMLButtonElement;
+
+    button.click();
+    await vi.waitFor(() => expect(button.textContent).toBe('Copied'));
+    expect(onCopy).toHaveBeenCalledWith('value');
+
+    button.click();
+    await vi.waitFor(() => expect(button.textContent).toBe('Copy failed'));
+
+    vi.advanceTimersByTime(2000);
+    expect(button.textContent).toBe('Copy value');
+    vi.useRealTimers();
   });
 });
 

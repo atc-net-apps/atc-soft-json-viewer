@@ -21,9 +21,11 @@ export interface Toolbar {
 
 export interface StatusBar {
   element: HTMLElement;
-  /** Shows the JSON path of the selected row, or nothing. */
+  /** Shows the JSON path of the selected row with its copy buttons, or nothing. */
   setPath(path: string | null): void;
 }
+
+export type CopyWhat = 'path' | 'value';
 
 export function renderToolbar(): Toolbar {
   const element = document.createElement('header');
@@ -51,7 +53,14 @@ export function renderToolbar(): Toolbar {
   return { element, slots };
 }
 
-export function renderStatusBar(info: { contentType: string; bytes: number }): StatusBar {
+/**
+ * `onCopy` is called by the Copy path / Copy value buttons and reports whether copying worked,
+ * so the button can say "Copied" or "Copy failed" for a moment.
+ */
+export function renderStatusBar(
+  info: { contentType: string; bytes: number },
+  onCopy: (what: CopyWhat) => Promise<boolean> = async () => false,
+): StatusBar {
   const element = document.createElement('footer');
   element.className = 'status-bar';
 
@@ -66,13 +75,37 @@ export function renderStatusBar(info: { contentType: string; bytes: number }): S
   const path = document.createElement('span');
   path.className = 'status-path';
 
-  element.append(type, size, path);
+  const actions = document.createElement('span');
+  actions.className = 'status-actions';
+  actions.hidden = true;
+  actions.append(copyButton('path', 'Copy path', onCopy), copyButton('value', 'Copy value', onCopy));
+
+  element.append(type, size, path, actions);
   return {
     element,
     setPath(value) {
       path.textContent = value ?? '';
+      actions.hidden = value === null;
     },
   };
+}
+
+const FEEDBACK_MS = 1200;
+
+function copyButton(what: CopyWhat, label: string, onCopy: (what: CopyWhat) => Promise<boolean>): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'button button-small';
+  button.dataset.copy = what;
+  button.textContent = label;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  button.addEventListener('click', async () => {
+    const copied = await onCopy(what);
+    button.textContent = copied ? 'Copied' : 'Copy failed';
+    clearTimeout(timer);
+    timer = setTimeout(() => (button.textContent = label), FEEDBACK_MS);
+  });
+  return button;
 }
 
 /** Decimal units, like Chrome DevTools: `902` → `902 B`, `12_345` → `12.3 KB`, `1_039_898` → `1.0 MB`. */

@@ -1,9 +1,11 @@
+import { copyText, valueToText } from './copy';
 import { detectKind } from './detect';
 import { parseDocument, type ParseResult } from './parse';
 import { renderSegmented } from './render/controls';
+import { enableSelection } from './render/selection';
 import { renderThemeButton } from './render/theme';
 import { renderStatusBar, renderToolbar } from './render/toolbar';
-import { renderTree } from './render/tree';
+import { getRowValue, renderTree } from './render/tree';
 import css from './render/viewer.css?inline';
 import { createViews, renderRaw } from './render/views';
 import { loadSettings, saveSettings, type Settings } from './settings';
@@ -123,11 +125,28 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
   const toolbar = renderToolbar();
   const content = document.createElement('main');
   content.className = 'content';
-  const statusBar = renderStatusBar({ contentType, bytes: new Blob([text]).size });
+  let selected: HTMLElement | null = null;
+  const statusBar = renderStatusBar({ contentType, bytes: new Blob([text]).size }, async (what) => {
+    if (!selected) {
+      return false;
+    }
+    const copied = what === 'path' ? (selected.dataset.path ?? '') : valueToText(getRowValue(selected));
+    return copyText(copied, root);
+  });
 
   const result = parseDocument(text);
   const views = createViews(content, {
-    tree: () => (result.ok ? renderTree(result.value, { expandDepth: settings.unfoldDepth }) : renderParseError(result)),
+    tree: () => {
+      if (!result.ok) {
+        return renderParseError(result);
+      }
+      const tree = renderTree(result.value, { expandDepth: settings.unfoldDepth });
+      enableSelection(tree, (row) => {
+        selected = row;
+        statusBar.setPath(row.dataset.path ?? null);
+      });
+      return tree;
+    },
     raw: () => renderRaw(text),
   });
 
@@ -143,6 +162,8 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
     initialView,
     (view) => {
       views.show(view);
+      // The selected path only means something in the tree.
+      statusBar.setPath(view === 'tree' && selected ? (selected.dataset.path ?? null) : null);
       // Remembered for the next page; failing to save must not break the viewer.
       saveSettings({ view }).catch(() => {});
     },

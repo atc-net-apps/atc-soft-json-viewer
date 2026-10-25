@@ -114,6 +114,58 @@ describe('toggleViewer', () => {
     });
   });
 
+  describe('copy value and path', () => {
+    const root = () => getMountedRoot() as ShadowRoot;
+    const pathText = () => root().querySelector('.status-path')?.textContent;
+    const actionsHidden = () => root().querySelector<HTMLElement>('.status-actions')?.hidden;
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('shows the path of the clicked line with copy buttons', async () => {
+      page('<pre>{"items": [{"sku": "A-100"}]}</pre>');
+      await toggleViewer(document, 'application/json');
+      expect(actionsHidden()).toBe(true);
+
+      root().querySelector<HTMLElement>('.row[data-path="$.items"]')?.click();
+
+      expect(pathText()).toBe('$.items');
+      expect(actionsHidden()).toBe(false);
+    });
+
+    it('copies the path, and the value with big numbers exact', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      vi.stubGlobal('navigator', { clipboard: { writeText } });
+      vi.stubGlobal('isSecureContext', true);
+      page('<pre>{"order": {"ledgerId": 9007199254740993, "sku": "A-100"}}</pre>');
+      await toggleViewer(document, 'application/json');
+
+      root().querySelector<HTMLElement>('.row[data-path="$.order"]')?.click();
+      root().querySelector<HTMLButtonElement>('[data-copy="path"]')?.click();
+      await vi.waitFor(() => expect(writeText).toHaveBeenLastCalledWith('$.order'));
+
+      root().querySelector<HTMLButtonElement>('[data-copy="value"]')?.click();
+      await vi.waitFor(() =>
+        expect(writeText).toHaveBeenLastCalledWith('{\n  "ledgerId": 9007199254740993,\n  "sku": "A-100"\n}'),
+      );
+      await vi.waitFor(() => expect(root().querySelector('[data-copy="value"]')?.textContent).toBe('Copied'));
+    });
+
+    it('hides the path in the raw view and shows it again in the tree', async () => {
+      page('<pre>{"a": 1}</pre>');
+      await toggleViewer(document, 'application/json');
+      root().querySelector<HTMLElement>('.row[data-path="$.a"]')?.click();
+
+      root().querySelector<HTMLButtonElement>('.toolbar-view [data-value="raw"]')?.click();
+      expect(pathText()).toBe('');
+      expect(actionsHidden()).toBe(true);
+
+      root().querySelector<HTMLButtonElement>('.toolbar-view [data-value="tree"]')?.click();
+      expect(pathText()).toBe('$.a');
+    });
+  });
+
   describe('theme', () => {
     const host = () => document.getElementById('atc-json-viewer');
     const themeButton = () =>

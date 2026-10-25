@@ -6,6 +6,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 
 - 🌳 **Collapsible tree**: fold and unfold any object or array
 - 📄 **Raw / Tree toggle**: switch to the exact text the server sent, and back
+- 📋 **Copy value & path**: click any line to see its JSON path, and copy the path or the value
 - 🎨 **Light, dark or system theme**: syntax colours that follow your system, or a theme you choose
 - 🔢 **Exact big numbers**: IDs beyond JavaScript's safe range are shown exactly as sent
 - ⚠️ **Invalid JSON pointer**: broken JSON shows what is wrong and where (line and column)
@@ -64,6 +65,15 @@ Objects and arrays fold and unfold with the ▸ / ▾ arrow. The top level is un
 ### 📄 Raw / Tree toggle
 
 The **Tree | Raw** switch in the toolbar shows the response exactly as the server sent it: nothing reformatted, reordered or rounded. It works for broken JSON too. The viewer remembers your choice, so if you prefer Raw, the next page opens in Raw. To get the browser's own page back instead, click the toolbar icon again.
+
+### 📋 Copy value & path
+
+Click any line in the tree to select it. The status bar at the bottom shows its JSON path, for example `$.items[0].sku`, with two buttons:
+
+- **Copy path** copies the path, ready for JSONPath tools.
+- **Copy value** copies the value: text without quotes, numbers exactly as sent, and objects or arrays as indented JSON. Big numbers keep every digit, even inside objects.
+
+Copying works on HTTPS pages, on `localhost` and on plain-HTTP pages.
 
 ### 🎨 Light and dark
 
