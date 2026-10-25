@@ -158,6 +158,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
         links: settings.links,
         counts: settings.counts,
         timestamps: settings.timestamps,
+        jwt: settings.jwt,
       });
       selection = enableSelection(tree, (row) => {
         selected = row;

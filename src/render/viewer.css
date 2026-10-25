@@ -436,6 +436,62 @@ mark.current {
   color: var(--syntax-number);
 }
 
+/* "JWT" after a JSON Web Token, and the decoded header and payload under its line. */
+.jwt-chip {
+  margin-left: 0.8em;
+  padding: 0 6px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: none;
+  color: var(--accent);
+  font: 600 0.8em var(--font-ui);
+  cursor: pointer;
+}
+
+.jwt-chip::before {
+  content: 'JWT';
+}
+
+.jwt-chip[aria-expanded='true'] {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.jwt-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.jwt-box {
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  background: var(--bar-bg);
+  white-space: normal;
+  cursor: default;
+}
+
+.jwt-box .tree {
+  padding: 0 0 4px;
+}
+
+/* The decoded lines can be folded but not selected. */
+.jwt-box .row[data-path] {
+  cursor: default;
+}
+
+.jwt-note {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font: 0.85em var(--font-ui);
+}
+
+.jwt-label {
+  margin: 6px 0 2px;
+  font: 600 0.85em var(--font-ui);
+}
+
 /* Dates and Unix times: click to see them as local time. */
 .timestamp {
   text-decoration: underline dotted;

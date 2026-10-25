@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { BigNumber } from '../parse';
 import {
   countLabel,
@@ -249,6 +249,67 @@ describe('renderTree', () => {
     it('underlines no times when they are switched off', () => {
       const tree = renderTree(ORDER, { timestamps: false });
       expect(tree.querySelector('.timestamp')).toBeNull();
+    });
+  });
+
+  describe('JSON Web Tokens', () => {
+    const TOKEN =
+      'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImNvbnRvc28tMjAyNi0xMCJ9.eyJzdWIiOiJjdXN0b21lci00NzExIiwibmFtZSI6IkNvbnRvc28gQS9TIiwic2NvcGUiOiJvcmRlcnMucmVhZCBvcmRlcnMud3JpdGUiLCJpYXQiOjE3OTI3NDU3MDAsImV4cCI6MTc5Mjc0OTMwMH0.ZmFrZS1zaWduYXR1cmUtZm9yLXRlc3Rpbmctb25seQ';
+    const chip = (tree: HTMLElement) => row(tree, '$.accessToken')?.querySelector<HTMLButtonElement>('.jwt-chip');
+    const box = (tree: HTMLElement) => row(tree, '$.accessToken')?.querySelector<HTMLElement>('.jwt-box');
+
+    it('adds a JWT chip to tokens and keeps it out of the line text', () => {
+      const tree = renderTree({ accessToken: TOKEN, note: 'eyJ not a token' });
+      expect(chip(tree)?.getAttribute('aria-label')).toBe('Decode this JSON Web Token');
+      expect(row(tree, '$.note')?.querySelector('.jwt-chip')).toBeNull();
+      expect(rowText(tree, '$.accessToken')).toBe(`"accessToken": "${TOKEN}",`);
+    });
+
+    it('shows the decoded header and payload under the line, and hides them on the next click', () => {
+      const tree = renderTree({ accessToken: TOKEN, note: 'x' });
+
+      chip(tree)?.click();
+
+      expect(chip(tree)?.getAttribute('aria-expanded')).toBe('true');
+      expect(box(tree)?.querySelector('.jwt-note')?.textContent).toBe('Decoded locally in your browser. The signature is not verified.');
+      expect(Array.from(box(tree)?.querySelectorAll('.jwt-label') ?? [], (label) => label.textContent)).toEqual(['Header', 'Payload']);
+      expect(box(tree)?.querySelector('.row[data-path="$.sub"]')?.textContent).toBe('"sub": "customer-4711",');
+
+      chip(tree)?.click();
+      expect(box(tree)).toBeNull();
+      expect(chip(tree)?.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('underlines exp and iat in the payload as times', () => {
+      const tree = renderTree({ accessToken: TOKEN });
+      chip(tree)?.click();
+      expect(box(tree)?.querySelector('.row[data-path="$.exp"] .timestamp')).not.toBeNull();
+      expect(box(tree)?.querySelector('.row[data-path="$.iat"] .timestamp')).not.toBeNull();
+    });
+
+    it('does not fold or select lines of the document when the decoded trees are clicked', () => {
+      const tree = renderTree({ accessToken: TOKEN });
+      const clicks = vi.fn();
+      tree.addEventListener('click', clicks);
+      chip(tree)?.click();
+      clicks.mockClear();
+
+      box(tree)?.querySelector<HTMLButtonElement>('.toggle')?.click();
+
+      expect(clicks).not.toHaveBeenCalled();
+      expect(branchOf(tree, '$').classList.contains('collapsed')).toBe(false);
+    });
+
+    it('keeps decoded tokens out of search', () => {
+      const tree = renderTree({ accessToken: TOKEN });
+      chip(tree)?.click();
+      setSearch(tree, 'customer');
+      expect(tree.querySelector('mark')).toBeNull();
+    });
+
+    it('adds no chips when JWT decoding is switched off', () => {
+      const tree = renderTree({ accessToken: TOKEN }, { jwt: false });
+      expect(tree.querySelector('.jwt-chip')).toBeNull();
     });
   });
 

@@ -15,6 +15,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - 🔗 **Clickable links**: web addresses in values open in a new tab
 - 🔢 **Item counts**: every object and array shows how many keys or items it has
 - 🕒 **Readable timestamps**: click a date or Unix time to see it as local time and "2 days ago"
+- 🔑 **JWT decoding**: see what is inside a JSON Web Token, decoded in your browser
 - 🎨 **Light, dark or system theme**: syntax colours that follow your system, or a theme you choose
 - 🔢 **Exact big numbers**: IDs beyond JavaScript's safe range are shown exactly as sent
 - ⚠️ **Invalid JSON pointer**: broken JSON shows what is wrong, with the broken line highlighted and a caret at the exact column
@@ -146,6 +147,12 @@ Dates and Unix times have a dotted underline. Click one to see it in your local 
 
 - **Text** counts when it is an ISO date with a time, such as `2026-10-23T09:15:00Z`. A date on its own, such as `2026-10-23`, is a day rather than a moment, so it isn't underlined.
 - **Numbers** count only when the key looks like a time (ending in `At`, `_at`, `Time`, `_time`, `Date` or `_date`, or exactly `timestamp`, `ts`, `exp`, `iat`, `nbf`, `time` or `date`) and they have 10 digits (Unix seconds) or 13 digits (milliseconds). So `"updatedAt": 1792745700` is a time, but `"quantity": 1700000000` is not.
+
+### 🔑 JWT decoding
+
+Login tokens such as `"accessToken": "eyJhbGciOi…"` are JSON Web Tokens: two parts of JSON (a header and a payload) plus a signature, encoded so they look like random text. Values that are tokens get a **JWT** chip at the end of their line. Click it to see the header and payload as trees under the line, with `exp` (expires) and `iat` (issued at) underlined as times, so you can see at a glance whether the token is still valid. Click the chip again to hide them.
+
+The token is decoded in your browser and never sent anywhere. The signature is **not** verified, and the box says so: decoding shows what a token claims, not whether it is genuine.
 
 ### 🎨 Light and dark
 

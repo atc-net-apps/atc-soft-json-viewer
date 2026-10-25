@@ -74,6 +74,16 @@ describe('toggleViewer', () => {
     expect(getMountedRoot()?.querySelector('.timestamp')).toBeNull();
   });
 
+  it('adds no JWT chips when the stored settings switch them off', async () => {
+    await saveSettings({ jwt: false });
+    page('<pre>{"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImNvbnRvc28tMjAyNi0xMCJ9.eyJzdWIiOiJjdXN0b21lci00NzExIiwibmFtZSI6IkNvbnRvc28gQS9TIiwic2NvcGUiOiJvcmRlcnMucmVhZCBvcmRlcnMud3JpdGUiLCJpYXQiOjE3OTI3NDU3MDAsImV4cCI6MTc5Mjc0OTMwMH0.ZmFrZS1zaWduYXR1cmUtZm9yLXRlc3Rpbmctb25seQ"}</pre>');
+
+    await toggleViewer(document, 'application/json');
+
+    expect(getMountedRoot()?.querySelector('.row[data-path="$.token"]')).not.toBeNull();
+    expect(getMountedRoot()?.querySelector('.jwt-chip')).toBeNull();
+  });
+
   it('uses the stored unfold depth and font size', async () => {
     await saveSettings({ unfoldDepth: 3, fontSize: 16 });
     page(JSON_PAGE);

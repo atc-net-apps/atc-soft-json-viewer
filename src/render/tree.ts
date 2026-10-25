@@ -1,3 +1,4 @@
+import { type DecodedJwt, decodeJwt } from '../jwt';
 import { BigNumber } from '../parse';
 import { childPath, ROOT_PATH } from '../path';
 import { type Key, searchPattern } from '../search';
@@ -16,6 +17,8 @@ export interface TreeOptions {
   search?: string;
   /** Underline dates and Unix times; clicking one shows it as local time. */
   timestamps?: boolean;
+  /** Add a JWT chip to JSON Web Tokens, which shows their decoded header and payload. */
+  jwt?: boolean;
 }
 
 /** One tree's options. Lines drawn later read them too, so changing them affects what is drawn next. */
@@ -38,6 +41,7 @@ const DEFAULTS: Required<TreeOptions> = {
   counts: true,
   search: '',
   timestamps: true,
+  jwt: true,
 };
 
 // The elements that show a key or a value, which search highlights.
@@ -55,6 +59,8 @@ const rowValues = new WeakMap<Element, unknown>();
 const trees = new WeakMap<Element, TreeState>();
 // The moment each underlined time stands for, in milliseconds since 1970.
 const times = new WeakMap<Element, number>();
+// The decoded token behind each JWT chip.
+const tokens = new WeakMap<Element, DecodedJwt>();
 
 /**
  * Draws a JSON value as a collapsible tree.
@@ -87,7 +93,10 @@ export function setSearch(tree: Element, term: string): void {
   state.search = term;
   state.pattern = term ? searchPattern(term) : null;
   for (const element of tree.querySelectorAll(SEARCHABLE)) {
-    markMatches(element, state.pattern);
+    // A decoded token isn't part of the document, so search doesn't find it either.
+    if (!element.closest('.jwt-box')) {
+      markMatches(element, state.pattern);
+    }
   }
 }
 
@@ -247,6 +256,12 @@ function onClick(event: MouseEvent): void {
     toggleTime(time);
   }
 
+  const chip = target.closest('.jwt-chip');
+  if (chip) {
+    toggleJwt(chip);
+    return;
+  }
+
   // The ⇊ / ⇈ button, or Alt+click on the fold arrow: everything inside at once.
   const expandAll = target.closest('.expand-all') ?? (event.altKey ? target.closest('.toggle') : null);
   if (expandAll) {
@@ -299,6 +314,10 @@ function renderEntry(
   row.append(renderPrimitive(value, key, options));
   if (!isLast) {
     row.append(span('punctuation', ','));
+  }
+  const token = options.jwt && typeof value === 'string' ? decodeJwt(value) : null;
+  if (token) {
+    row.append(renderJwtChip(token));
   }
   return row;
 }
@@ -444,6 +463,58 @@ function toggleTime(element: Element): void {
   if (time !== undefined) {
     element.after(span('timestamp-info', describeTimestamp(time)));
   }
+}
+
+/** "JWT" at the end of a token's line. The label is drawn by viewer.css, so it isn't part of the line's text. */
+function renderJwtChip(token: DecodedJwt): HTMLElement {
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'jwt-chip';
+  chip.title = 'A JSON Web Token: click to show what is inside';
+  chip.setAttribute('aria-label', 'Decode this JSON Web Token');
+  chip.setAttribute('aria-expanded', 'false');
+  tokens.set(chip, token);
+  return chip;
+}
+
+/**
+ * Shows the token's header and payload as trees under its line, or hides them again. Times such
+ * as `exp` and `iat` are underlined there too.
+ */
+function toggleJwt(chip: Element): void {
+  const row = chip.closest('.row');
+  const shown = row?.querySelector(':scope > .jwt-box');
+  if (shown) {
+    shown.remove();
+    chip.setAttribute('aria-expanded', 'false');
+    return;
+  }
+  const token = tokens.get(chip);
+  const state = row && trees.get(row.closest('.tree') as Element);
+  if (!row || !token || !state) {
+    return;
+  }
+
+  const box = document.createElement('div');
+  box.className = 'jwt-box';
+  const note = document.createElement('p');
+  note.className = 'jwt-note';
+  note.textContent = 'Decoded locally in your browser. The signature is not verified.';
+  box.append(note);
+  const options: TreeOptions = { expandDepth: Infinity, links: state.links, counts: state.counts, timestamps: state.timestamps, jwt: false };
+  for (const [label, part] of [
+    ['Header', token.header],
+    ['Payload', token.payload],
+  ] as const) {
+    const title = document.createElement('p');
+    title.className = 'jwt-label';
+    title.textContent = label;
+    box.append(title, renderTree(part, options));
+  }
+  // Clicks inside are for the decoded trees only: they must not fold or select lines of the document.
+  box.addEventListener('click', (event) => event.stopPropagation());
+  row.append(box);
+  chip.setAttribute('aria-expanded', 'true');
 }
 
 function renderPlain(value: unknown, options: TreeState): HTMLElement {
