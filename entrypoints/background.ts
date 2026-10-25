@@ -1,3 +1,4 @@
+import { isOpenSettings } from '@/src/messages';
 import type { ToggleResult } from '@/src/mount';
 
 const NOTICE_MS = 2000;
@@ -24,6 +25,13 @@ export default defineBackground(() => {
       // Browser pages (chrome://, edge://, the web stores) never allow extensions to run code.
       console.warn('ATC JSON Viewer: cannot run on this tab', { url: tab.url, error });
       await showNotice(tab.id, "ATC JSON Viewer can't run on this page");
+    }
+  });
+
+  // The ⚙ button in the viewer asks for the settings page.
+  browser.runtime.onMessage.addListener((message, sender) => {
+    if (isOpenSettings(message, sender.id, browser.runtime.id)) {
+      browser.runtime.openOptionsPage().catch(() => {});
     }
   });
 });

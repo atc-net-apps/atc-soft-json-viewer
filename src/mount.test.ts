@@ -84,6 +84,17 @@ describe('toggleViewer', () => {
     expect(getMountedRoot()?.querySelector('.jwt-chip')).toBeNull();
   });
 
+  it('asks for the settings page when ⚙ is clicked', async () => {
+    const sendMessage = vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
+    page(JSON_PAGE);
+    await toggleViewer(document, 'application/json');
+
+    getMountedRoot()?.querySelector<HTMLButtonElement>('.toolbar-actions [aria-label="Settings"]')?.click();
+
+    expect(sendMessage).toHaveBeenCalledWith({ type: 'open-settings' });
+    sendMessage.mockRestore();
+  });
+
   it('uses the stored unfold depth and font size', async () => {
     await saveSettings({ unfoldDepth: 3, fontSize: 16 });
     page(JSON_PAGE);

@@ -166,6 +166,13 @@
   background: var(--bg-hover);
 }
 
+/* ⚙ */
+.button-icon {
+  padding: 1px 7px;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
 .button[aria-pressed='true'] {
   border-color: var(--accent);
   background: var(--accent);

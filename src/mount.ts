@@ -1,5 +1,6 @@
 import { copyText, valueToText } from './copy';
 import { detectKind } from './detect';
+import { OPEN_SETTINGS } from './messages';
 import { parseDocument } from './parse';
 import { ROOT_PATH } from './path';
 import { renderSegmented, renderToggle } from './render/controls';
@@ -309,6 +310,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
     renderThemeButton(host, settings.theme, (theme) => {
       saveSettings({ theme }).catch(() => {});
     }),
+    renderSettingsButton(),
   );
 
   // "/" goes to the search box and Escape clears it, from anywhere but a text box.
@@ -337,6 +339,20 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
   if (import.meta.env.DEV) {
     console.log(`ATC JSON Viewer: formatted ${text.length} characters in ${Math.round(performance.now() - started)} ms`);
   }
+}
+
+/** ⚙: asks the service worker to open the settings page, which a web page can't open itself. */
+function renderSettingsButton(): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'button button-icon';
+  button.textContent = '⚙';
+  button.title = 'Settings';
+  button.setAttribute('aria-label', 'Settings');
+  button.addEventListener('click', () => {
+    browser.runtime.sendMessage(OPEN_SETTINGS).catch(() => {});
+  });
+  return button;
 }
 
 /**

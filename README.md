@@ -23,7 +23,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - ⚡ **Large responses**: only what you unfold is drawn, and big arrays are shown 500 items at a time
 - 📊 **Status bar**: shows the response's content type and size
 - ⌨️ **Keyboard navigation**: move through the tree, fold, unfold and search without the mouse
-- 💾 **Remembers your settings**: stored in this browser only
+- ⚙️ **Settings page**: theme, font size, how pages open and which extras are shown, stored in this browser only
 
 **Privacy & security**
 
@@ -195,11 +195,26 @@ If the page claims to be JSON but isn't valid, the viewer explains the problem i
 
 Below the message, the text around the error is shown with line numbers: the broken line is highlighted, the character where the problem starts is outlined, and a **^** points at it. You see the 10 lines before and after the error. Very long lines, as in minified JSON, are cut to the part around the error. The whole text is always one click away in the **Raw** view.
 
-### 📊 Status bar and settings
+### 📊 Status bar
 
 A toolbar runs along the top of the viewer and a status bar along the bottom, showing the content type the server sent (for example `application/json`) and the size of the response.
 
-Your viewer settings, such as how many levels are unfolded when a page is formatted (2 by default), are remembered in this browser with `chrome.storage.local`. They never leave your computer, and no page content is ever stored.
+### ⚙️ Settings
+
+Open the settings with the **⚙** button in the viewer's toolbar, or right-click the toolbar icon and choose **Options**. Every change is saved straight away and applies to the next page you format.
+
+| Setting | Default |
+|---------|---------|
+| Theme | System |
+| Font size | 13 px |
+| Open in (Tree, Table or Raw) | Tree |
+| Unfold (levels when a page is formatted) | 2 |
+| Sort keys A–Z | Off |
+| Clickable links, item counts, readable timestamps, JWT chips | On |
+
+The theme, the view and A–Z are also remembered when you change them in the viewer's toolbar. **Reset to defaults** forgets everything you have chosen.
+
+Settings are stored in this browser only, with `chrome.storage.local`. They never leave your computer, and no page content is ever stored.
 
 ### ⚡ Large responses
 
