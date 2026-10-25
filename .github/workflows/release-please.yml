@@ -1,0 +1,56 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required to attach the zip to the GitHub Release
+
+    steps:
+      - name: release-please
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_PAT }}
+
+      # The steps below only run when merging the release pull request has just created a release.
+      - name: 🛒 Checkout repository
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+
+      - name: ⚙️ Setup Node.js (version from .nvmrc)
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: 🔁 Install packages
+        if: ${{ steps.release.outputs.release_created }}
+        run: npm ci
+
+      - name: 🧪 Run unit tests
+        if: ${{ steps.release.outputs.release_created }}
+        run: npm test
+
+      - name: 📦 Build and zip the extension
+        if: ${{ steps.release.outputs.release_created }}
+        run: npm run zip
+
+      - name: 🔒 Security checks
+        if: ${{ steps.release.outputs.release_created }}
+        run: npm run check:security
+
+      - name: 📎 Attach the zip to the GitHub Release
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.release.outputs.tag_name }}
+        run: gh release upload "$TAG_NAME" .output/*-chrome.zip
