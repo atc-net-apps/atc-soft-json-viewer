@@ -189,6 +189,19 @@ describe('toggleViewer', () => {
       expect(root().querySelector('.current-match')?.getAttribute('data-path')).toBe('$.customer.address.city');
     });
 
+    it('selects a JSONPath result in the tree, so it can be copied', async () => {
+      page(JSON_PAGE);
+      await toggleViewer(document, 'application/json');
+      const input = searchBox() as HTMLInputElement;
+
+      input.value = '$..city';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+      expect(root().querySelector('.query-result .query-path')?.textContent).toBe('$.customer.address.city');
+      expect(root().querySelector('.row.selected')?.getAttribute('data-path')).toBe('$.customer.address.city');
+      expect(root().querySelector('.status-path')?.textContent).toBe('$.customer.address.city');
+    });
+
     it('hides the search box in the raw view', async () => {
       page(JSON_PAGE);
       await toggleViewer(document, 'application/json');

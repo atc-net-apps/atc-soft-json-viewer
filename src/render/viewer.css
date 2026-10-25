@@ -231,6 +231,84 @@
   cursor: default;
 }
 
+/* JSONPath results: a full-width part of the sticky toolbar, so it stays in view while the tree scrolls. */
+.query-results {
+  flex-basis: 100%;
+  max-height: 35vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+/* Hidden with the search box, in the table and raw views. */
+.toolbar-search[hidden] ~ .query-results {
+  display: none !important;
+}
+
+.query-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.query-result {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  padding: 3px 10px;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: var(--font-size, 13px) ui-monospace, 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
+  text-align: left;
+  cursor: pointer;
+}
+
+.query-result:hover {
+  background: var(--bg-hover);
+}
+
+.query-result[aria-current='true'] {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--mark-current-bg);
+}
+
+.query-result:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.query-path {
+  flex: none;
+  color: var(--syntax-key);
+}
+
+.query-value {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.query-more,
+.query-error p {
+  margin: 0;
+  padding: 6px 10px;
+  color: var(--muted);
+}
+
+.query-error p {
+  color: var(--error);
+}
+
+.query-error pre {
+  margin: 0;
+  padding: 0 10px 8px;
+  font: inherit;
+  font-family: ui-monospace, 'Cascadia Code', 'Cascadia Mono', Consolas, monospace;
+}
+
 /* "Unfold" in front of the 1 2 3 All buttons. */
 .levels {
   display: inline-flex;

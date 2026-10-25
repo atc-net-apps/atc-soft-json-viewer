@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { REVEAL_LIMIT, renderSearch } from './search';
+import { LISTED_RESULTS, REVEAL_LIMIT, renderSearch } from './search';
 import { renderTree } from './tree';
 
 const ORDERS = {
@@ -12,7 +12,8 @@ const ORDERS = {
 
 function setup(value: unknown = ORDERS, delay = 0) {
   const tree = renderTree(value);
-  const box = renderSearch(() => tree, value, delay);
+  const onSelect = vi.fn();
+  const { element: box, results } = renderSearch(() => tree, value, { delay, onSelect });
   const input = box.querySelector('input') as HTMLInputElement;
   const press = (key: string, shiftKey = false) => input.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey, bubbles: true }));
   const type = (text: string) => {
@@ -26,7 +27,7 @@ function setup(value: unknown = ORDERS, delay = 0) {
   };
   const count = () => box.querySelector('.search-count')?.textContent;
   const current = () => tree.querySelector<HTMLElement>('.current-match')?.dataset.path;
-  return { tree, box, input, press, type, search, count, current };
+  return { tree, box, results, onSelect, input, press, type, search, count, current };
 }
 
 describe('renderSearch', () => {
@@ -175,6 +176,112 @@ describe('renderSearch', () => {
       press('Enter');
     }
     expect(isShown(REVEAL_LIMIT + 10)).toBe(true);
+  });
+
+  describe('JSONPath queries', () => {
+    const listed = (results: HTMLElement) =>
+      Array.from(results.querySelectorAll('.query-result'), (item) => [
+        item.querySelector('.query-path')?.textContent,
+        item.querySelector('.query-value')?.textContent,
+      ]);
+
+    it('lists the results of text starting with $. with their paths and values', () => {
+      const { search, results, count } = setup();
+
+      search('$.orders[*].id');
+
+      expect(results.hidden).toBe(false);
+      expect(listed(results)).toEqual([
+        ['$.orders[0].id', '"A-1"'],
+        ['$.orders[1].id', '"A-2"'],
+        ['$.orders[2].id', '"A-3"'],
+      ]);
+      expect(count()).toBe('1 of 3');
+    });
+
+    it('shows objects and arrays in the list by their size', () => {
+      const { search, results } = setup();
+      search('$.orders[0].*');
+      expect(listed(results)).toEqual([
+        ['$.orders[0].id', '"A-1"'],
+        ['$.orders[0].items', '[1 item]'],
+      ]);
+    });
+
+    it('selects the first result in the tree, and the next ones with Enter and the arrow keys', () => {
+      const { search, press, onSelect, current } = setup();
+
+      search('$..sku');
+      expect(onSelect.mock.lastCall?.[0].dataset.path).toBe('$.orders[0].items[0].sku');
+      expect(current()).toBe('$.orders[0].items[0].sku');
+
+      press('ArrowDown');
+      expect(current()).toBe('$.orders[1].items[0].sku');
+      press('Enter', true);
+      expect(current()).toBe('$.orders[0].items[0].sku');
+    });
+
+    it('selects a result when it is clicked in the list, and marks it there', () => {
+      const { search, results, current } = setup();
+      search('$..sku');
+
+      results.querySelector<HTMLButtonElement>('.query-result[data-index="2"]')?.click();
+
+      expect(current()).toBe('$.orders[2].items[0].sku');
+      expect(results.querySelector('[aria-current="true"]')?.getAttribute('data-index')).toBe('2');
+    });
+
+    it('does not highlight text for a query', () => {
+      const { search, tree } = setup();
+      search('$..sku');
+      expect(tree.querySelector('mark')).toBeNull();
+    });
+
+    it('says so when a query selects nothing', () => {
+      const { search, count, results } = setup();
+      search('$.missing');
+      expect(count()).toBe('No results');
+      expect(results.querySelector('.query-result')).toBeNull();
+    });
+
+    it('shows what is wrong with a query, with a caret under it', () => {
+      const { search, results, count } = setup();
+
+      search('$.orders[?@.id]');
+
+      expect(results.querySelector('.query-error p')?.textContent).toBe('Not supported yet: filters ([?…])');
+      expect(results.querySelector('.query-error pre')?.textContent).toBe('$.orders[?@.id]\n         ^');
+      expect(count()).toBe('');
+    });
+
+    it('treats text such as $ref as a search, not a query', () => {
+      const { search, results, tree } = setup({ $ref: '#/a' });
+      search('$ref');
+      expect(results.hidden).toBe(true);
+      expect(tree.querySelector('mark')?.textContent).toBe('$ref');
+    });
+
+    it('hides the list again for a normal search, and with Escape', () => {
+      const { search, press, results } = setup();
+      search('$..sku');
+
+      search('sku');
+      expect(results.hidden).toBe(true);
+
+      search('$..sku');
+      press('Escape');
+      expect(results.hidden).toBe(true);
+    });
+
+    it(`lists only the first ${LISTED_RESULTS} results, and says so`, () => {
+      const { search, results, count } = setup(Array.from({ length: LISTED_RESULTS + 20 }, (_, i) => i));
+
+      search('$[*]');
+
+      expect(results.querySelectorAll('.query-result')).toHaveLength(LISTED_RESULTS);
+      expect(results.querySelector('.query-more')?.textContent).toContain('Enter and ↓ go through all of them');
+      expect(count()).toBe(`1 of ${LISTED_RESULTS + 20}`);
+    });
   });
 
   it('shows "+" when there are more matches than it counts', () => {

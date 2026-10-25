@@ -8,6 +8,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - 🪜 **Unfold to level**: unfold 1, 2 or 3 levels, or everything, with one click
 - ⏬ **Unfold everything inside**: open one object or array all the way down with ⇊ or Alt+click
 - 🔍 **Search**: highlight matching keys and values, unfold where they are, and step through them with Enter
+- 🧭 **JSONPath query**: type `$.items[*].sku` in the search box to list just those values
 - 📄 **Raw / Tree toggle**: switch to the exact text the server sent, and back
 - 📑 **Table view**: see a list of objects as rows and columns
 - 📋 **Copy value & path**: click any line to see its JSON path, and copy the path or the value
@@ -87,6 +88,22 @@ Type in the **Search keys and values** box in the toolbar. Every key and value c
 | **Escape** | Clear the search |
 
 The search covers the whole response, including the parts that aren't drawn yet, such as entries behind **Show more**. Text is matched as the tree shows it: numbers as written, and strings without their quotes. After 10 000 matches the counter stops counting and shows **10,000+**. The search box is hidden in the raw view, where the browser's own **Ctrl+F** works.
+
+### 🧭 JSONPath query
+
+Type a [JSONPath](https://www.rfc-editor.org/rfc/rfc9535) query in the search box, starting with `$.` or `$[`, and a list under the toolbar shows every result with its path and value. The first result is selected in the tree, ready for **Copy path** or **Copy value**; **Enter**, **↓** and **↑** go through the others, or click one in the list.
+
+| Query | Selects |
+|-------|---------|
+| `$` | the whole response |
+| `$.customer.name` or `$['customer']['name']` | one value by its keys; use quotes for keys such as `odd key` |
+| `$.items[0]` | the first item (counting starts at 0) |
+| `$.items[-1]` | the last item: negative numbers count from the end, so `[-2]` is the one before the last |
+| `$.items[*].sku` | the `sku` of every item |
+| `$.customer.*` | everything directly inside `customer` |
+| `$..sku` | every `sku`, however deep |
+
+Filters (`[?@.price < 10]`), slices (`[0:2]`) and several selectors in one bracket (`[0,1]`) are not supported yet: the list says so and points at the spot. Text such as `$ref` is a normal search, because a query always continues with `.` or `[` after the `$`.
 
 ### 📄 Raw / Tree toggle
 

@@ -250,7 +250,10 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
 
   // None for broken JSON, which has nothing to search or unfold.
   if (result.ok) {
-    toolbar.slots.search.append(renderSearch(() => tree, result.value));
+    const search = renderSearch(() => tree, result.value, { onSelect: (line) => selection?.select(line) });
+    toolbar.slots.search.append(search.element);
+    // Under the toolbar's controls, so the list stays in view while the tree scrolls.
+    toolbar.element.append(search.results);
     toolbar.slots.levels.append(
       renderLevelButtons((level) => {
         if (tree) {
