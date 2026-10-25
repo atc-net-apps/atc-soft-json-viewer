@@ -8,6 +8,8 @@ export interface TreeOptions {
   pageSize?: number;
   /** Turn http and https URLs in strings into links that open in a new tab. */
   links?: boolean;
+  /** Show "3 items" or "5 keys" on the first line of every object and array. */
+  counts?: boolean;
 }
 
 type Key = string | number;
@@ -22,7 +24,7 @@ interface Branch {
   options: Required<TreeOptions>;
 }
 
-const DEFAULTS: Required<TreeOptions> = { expandDepth: 1, pageSize: 500, links: true };
+const DEFAULTS: Required<TreeOptions> = { expandDepth: 1, pageSize: 500, links: true, counts: true };
 
 // Keeps each branch element's data without putting it in the DOM.
 const branches = new WeakMap<Element, Branch>();
@@ -150,6 +152,10 @@ function renderBranch(
     folded.append(span('punctuation', comma));
   }
   head.append(folded);
+  if (options.counts) {
+    const size = Array.isArray(value) ? value.length : Object.keys(value).length;
+    head.append(span('count', countLabel(size, Array.isArray(value))));
+  }
 
   const children = document.createElement('div');
   children.className = 'children';
@@ -226,6 +232,12 @@ function renderPrimitive(value: unknown, options: Required<TreeOptions>): HTMLEl
     default:
       return span('null', 'null');
   }
+}
+
+/** `1 item`, `1,200 items`, `1 key`, `5 keys`. */
+export function countLabel(count: number, isArray: boolean): string {
+  const noun = isArray ? 'item' : 'key';
+  return `${count.toLocaleString('en-US')} ${noun}${count === 1 ? '' : 's'}`;
 }
 
 /**

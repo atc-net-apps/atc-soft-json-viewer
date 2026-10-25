@@ -140,7 +140,11 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
       if (!result.ok) {
         return renderParseError(result);
       }
-      const tree = renderTree(result.value, { expandDepth: settings.unfoldDepth, links: settings.links });
+      const tree = renderTree(result.value, {
+        expandDepth: settings.unfoldDepth,
+        links: settings.links,
+        counts: settings.counts,
+      });
       enableSelection(tree, (row) => {
         selected = row;
         statusBar.setPath(row.dataset.path ?? null);

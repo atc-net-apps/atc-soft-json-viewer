@@ -56,6 +56,15 @@ describe('toggleViewer', () => {
     expect(root?.querySelector('.row[data-path="$.customer.address.city"]')).toBeNull();
   });
 
+  it('hides item counts when the stored settings switch them off', async () => {
+    await saveSettings({ counts: false });
+    page(JSON_PAGE);
+
+    await toggleViewer(document, 'application/json');
+
+    expect(getMountedRoot()?.querySelector('.count')).toBeNull();
+  });
+
   it('uses the stored unfold depth and font size', async () => {
     await saveSettings({ unfoldDepth: 3, fontSize: 16 });
     page(JSON_PAGE);

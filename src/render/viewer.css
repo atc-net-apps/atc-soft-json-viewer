@@ -293,6 +293,14 @@
   color: var(--syntax-punctuation);
 }
 
+/* "3 items" after an object or array's first line. */
+.count {
+  margin-left: 0.8em;
+  color: var(--muted);
+  font: 500 0.85em var(--font-ui);
+  white-space: nowrap;
+}
+
 /* Folding: a folded branch hides its children and closing line; an unfolded one hides the "{ … }" preview. */
 .branch.collapsed > .children,
 .branch.collapsed > .branch-tail,

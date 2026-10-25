@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BigNumber } from '../parse';
-import { getRowValue, isWebUrl, renderTree, setExpanded } from './tree';
+import { countLabel, getRowValue, isWebUrl, renderTree, setExpanded } from './tree';
 
 const row = (tree: HTMLElement, path: string) => tree.querySelector<HTMLElement>(`.row[data-path="${path}"]`);
 const rowText = (tree: HTMLElement, path: string) => row(tree, path)?.textContent;
@@ -119,6 +119,36 @@ describe('renderTree', () => {
     });
   });
 
+  describe('item counts', () => {
+    const count = (tree: HTMLElement, path: string) => row(tree, path)?.querySelector('.count')?.textContent;
+
+    it('shows how many items an array has and how many keys an object has', () => {
+      const tree = renderTree({ items: [1, 2, 3], customer: { id: 1, name: 'Contoso' } });
+      expect(count(tree, '$')).toBe('2 keys');
+      expect(count(tree, '$.items')).toBe('3 items');
+      expect(count(tree, '$.customer')).toBe('2 keys');
+    });
+
+    it('shows the count on folded and unfolded objects alike', () => {
+      const tree = renderTree({ outer: { inner: { a: 1 } } }, { expandDepth: 2 });
+      expect(branchOf(tree, '$.outer').classList.contains('collapsed')).toBe(false);
+      expect(branchOf(tree, '$.outer.inner').classList.contains('collapsed')).toBe(true);
+      expect(count(tree, '$.outer')).toBe('1 key');
+      expect(count(tree, '$.outer.inner')).toBe('1 key');
+    });
+
+    it('shows no count on empty objects and arrays', () => {
+      const tree = renderTree({ none: [], nothing: {} });
+      expect(count(tree, '$.none')).toBeUndefined();
+      expect(count(tree, '$.nothing')).toBeUndefined();
+    });
+
+    it('shows no counts when counts are switched off', () => {
+      const tree = renderTree({ items: [1, 2] }, { counts: false });
+      expect(tree.querySelector('.count')).toBeNull();
+    });
+  });
+
   describe('links', () => {
     it('turns http and https addresses into links that open in a new tab', () => {
       const tree = renderTree({ site: 'https://contoso.example/about', api: 'http://localhost:5179/orders.json' });
@@ -149,6 +179,24 @@ describe('renderTree', () => {
       const tree = renderTree({ site: 'https://contoso.example' }, { links: false });
       expect(tree.querySelector('a')).toBeNull();
     });
+  });
+});
+
+describe('countLabel', () => {
+  it.each([
+    [0, '0 items'],
+    [1, '1 item'],
+    [2, '2 items'],
+    [1200, '1,200 items'],
+  ])('labels an array of %i as %s', (count, label) => {
+    expect(countLabel(count, true)).toBe(label);
+  });
+
+  it.each([
+    [1, '1 key'],
+    [5, '5 keys'],
+  ])('labels an object with %i keys as %s', (count, label) => {
+    expect(countLabel(count, false)).toBe(label);
   });
 });
 

@@ -8,6 +8,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - 📄 **Raw / Tree toggle**: switch to the exact text the server sent, and back
 - 📋 **Copy value & path**: click any line to see its JSON path, and copy the path or the value
 - 🔗 **Clickable links**: web addresses in values open in a new tab
+- 🔢 **Item counts**: every object and array shows how many keys or items it has
 - 🎨 **Light, dark or system theme**: syntax colours that follow your system, or a theme you choose
 - 🔢 **Exact big numbers**: IDs beyond JavaScript's safe range are shown exactly as sent
 - ⚠️ **Invalid JSON pointer**: broken JSON shows what is wrong and where (line and column)
@@ -79,6 +80,10 @@ Copying works on HTTPS pages, on `localhost` and on plain-HTTP pages.
 ### 🔗 Clickable links
 
 Values that are a web address (`http://` or `https://`) are underlined and open in a new tab when clicked. Only whole values that are web addresses become links. Other kinds of address, such as `javascript:` or `file:`, never do, so clicking a value can't run code or open files on your computer. The new tab isn't told which page the link came from.
+
+### 🔢 Item counts
+
+The first line of every object and array ends with a small count, such as **3 items** or **5 keys**, whether it is folded or unfolded. You can see how big a part of the response is without unfolding it.
 
 ### 🎨 Light and dark
 
