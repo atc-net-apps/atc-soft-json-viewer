@@ -345,6 +345,38 @@
   color: var(--accent);
 }
 
+/* ⇊ / ⇈ at the end of an object or array's first line, shown while the line is hovered or focused. */
+.expand-all {
+  margin-left: 0.6em;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  visibility: hidden;
+}
+
+.expand-all::before {
+  content: '⇊';
+}
+
+.branch.deep > .branch-head > .expand-all::before {
+  content: '⇈';
+}
+
+.branch-head:hover > .expand-all,
+.branch-head:focus-within > .expand-all {
+  visibility: visible;
+}
+
+.expand-all:hover {
+  background: var(--bg);
+  color: var(--accent);
+}
+
 .more {
   padding: 0;
   border: 0;
@@ -379,6 +411,7 @@
 }
 
 .toggle:focus-visible,
+.expand-all:focus-visible,
 .more:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;

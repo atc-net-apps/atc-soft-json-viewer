@@ -60,9 +60,53 @@ export function setExpanded(branchElement: Element, expanded: boolean): void {
     renderNextPage(branchElement, branch);
   }
   branchElement.classList.toggle('collapsed', !expanded);
-  const toggle = branchElement.querySelector(':scope > .row > .toggle');
+  if (!expanded) {
+    // Something is folded again, so neither it nor anything around it is unfolded all the way down any more.
+    for (let element: Element | null = branchElement; element; element = element.parentElement?.closest('.branch') ?? null) {
+      if (element !== branchElement && element.classList.contains('deep')) {
+        element.classList.remove('deep');
+        updateLabels(element);
+      }
+    }
+    branchElement.classList.remove('deep');
+  }
+  updateLabels(branchElement);
+}
+
+/**
+ * Unfolds or folds a branch and every object and array inside it, building children as needed.
+ * Paging still applies: each one draws only its first page, so a huge document can't freeze the tab.
+ */
+export function setExpandedDeep(branchElement: Element, expanded: boolean): void {
+  const branch = branches.get(branchElement);
+  if (!branch) {
+    return;
+  }
+  const built = branch.rendered > 0;
+  // Marked first, so children built while unfolding are unfolded all the way down too (see renderNextPage).
+  branchElement.classList.toggle('deep', expanded);
+  setExpanded(branchElement, expanded);
+  if (built) {
+    for (const child of branchElement.querySelectorAll(':scope > .children > .branch')) {
+      setExpandedDeep(child, expanded);
+    }
+  }
+}
+
+/** The fold arrow's and the ⇊ / ⇈ button's descriptions, which change with the branch's state. */
+function updateLabels(branchElement: Element): void {
+  const expanded = !branchElement.classList.contains('collapsed');
+  const deep = branchElement.classList.contains('deep');
+  const everything = `${deep ? 'Fold' : 'Unfold'} everything inside`;
+
+  const toggle = branchElement.querySelector(':scope > .branch-head > .toggle');
   toggle?.setAttribute('aria-expanded', String(expanded));
   toggle?.setAttribute('aria-label', expanded ? 'Collapse' : 'Expand');
+  toggle?.setAttribute('title', `Click to ${expanded ? 'fold' : 'unfold'} · Alt+click to ${everything.toLowerCase()}`);
+
+  const expandAll = branchElement.querySelector(':scope > .branch-head > .expand-all');
+  expandAll?.setAttribute('aria-label', everything);
+  expandAll?.setAttribute('title', everything);
 }
 
 /**
@@ -92,8 +136,18 @@ function applyLevel(branchElement: Element, level: number): void {
   }
 }
 
-function onClick(event: Event): void {
+function onClick(event: MouseEvent): void {
   const target = event.target as Element;
+
+  // The ⇊ / ⇈ button, or Alt+click on the fold arrow: everything inside at once.
+  const expandAll = target.closest('.expand-all') ?? (event.altKey ? target.closest('.toggle') : null);
+  if (expandAll) {
+    const branchElement = expandAll.closest('.branch');
+    if (branchElement) {
+      setExpandedDeep(branchElement, !branchElement.classList.contains('deep'));
+    }
+    return;
+  }
 
   const toggle = target.closest('.toggle');
   if (toggle) {
@@ -167,8 +221,6 @@ function renderBranch(
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'toggle';
-  toggle.setAttribute('aria-expanded', 'false');
-  toggle.setAttribute('aria-label', 'Expand');
   head.append(toggle);
   appendKey(head, key);
   head.append(span('bracket', open));
@@ -183,6 +235,11 @@ function renderBranch(
     const size = Array.isArray(value) ? value.length : Object.keys(value).length;
     head.append(span('count', countLabel(size, Array.isArray(value))));
   }
+  // ⇊ / ⇈, drawn by viewer.css so it isn't part of the line's text when copying.
+  const expandAll = document.createElement('button');
+  expandAll.type = 'button';
+  expandAll.className = 'expand-all';
+  head.append(expandAll);
 
   const children = document.createElement('div');
   children.className = 'children';
@@ -197,6 +254,7 @@ function renderBranch(
 
   branchElement.append(head, children, tail);
   branches.set(branchElement, { value, path, depth, entries: null, rendered: 0, options });
+  updateLabels(branchElement);
 
   if (depth < options.expandDepth) {
     setExpanded(branchElement, true);
@@ -214,19 +272,22 @@ function renderNextPage(branchElement: Element, branch: Branch): void {
     return;
   }
   const { entries, options } = branch;
+  const deep = branchElement.classList.contains('deep');
   const end = Math.min(entries.length, branch.rendered + options.pageSize);
   for (let i = branch.rendered; i < end; i++) {
     const [key, child] = entries[i] as [Key, unknown];
-    children.append(
-      renderEntry(
-        typeof key === 'number' ? null : key,
-        child,
-        childPath(branch.path, key),
-        branch.depth + 1,
-        i === entries.length - 1,
-        options,
-      ),
+    const entry = renderEntry(
+      typeof key === 'number' ? null : key,
+      child,
+      childPath(branch.path, key),
+      branch.depth + 1,
+      i === entries.length - 1,
+      options,
     );
+    children.append(entry);
+    if (deep && branches.has(entry)) {
+      setExpandedDeep(entry, true);
+    }
   }
   branch.rendered = end;
 

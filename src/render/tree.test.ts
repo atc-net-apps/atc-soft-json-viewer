@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BigNumber } from '../parse';
-import { countLabel, expandToLevel, getRowValue, isWebUrl, renderTree, setExpanded } from './tree';
+import { countLabel, expandToLevel, getRowValue, isWebUrl, renderTree, setExpanded, setExpandedDeep } from './tree';
 
 const row = (tree: HTMLElement, path: string) => tree.querySelector<HTMLElement>(`.row[data-path="${path}"]`);
 const rowText = (tree: HTMLElement, path: string) => row(tree, path)?.textContent;
@@ -97,6 +97,61 @@ describe('renderTree', () => {
     });
   });
 
+  describe('unfold everything inside', () => {
+    const NESTED = { a: { b: { c: { d: 1 } } }, other: { x: 1 } };
+    const expandAll = (tree: HTMLElement, path: string) => row(tree, path)?.querySelector<HTMLButtonElement>('.expand-all');
+    const toggle = (tree: HTMLElement, path: string) => row(tree, path)?.querySelector<HTMLButtonElement>('.toggle');
+
+    it('unfolds everything inside when ⇊ is clicked, and folds it all again when ⇈ is clicked', () => {
+      const tree = renderTree(NESTED);
+
+      expandAll(tree, '$.a')?.click();
+      expect(rowText(tree, '$.a.b.c.d')).toBe('"d": 1');
+      expect(branchOf(tree, '$.a').classList.contains('deep')).toBe(true);
+      expect(expandAll(tree, '$.a')?.getAttribute('aria-label')).toBe('Fold everything inside');
+
+      expandAll(tree, '$.a')?.click();
+      expect(branchOf(tree, '$.a').classList.contains('collapsed')).toBe(true);
+      expect(branchOf(tree, '$.a.b.c').classList.contains('collapsed')).toBe(true);
+      expect(expandAll(tree, '$.a')?.getAttribute('aria-label')).toBe('Unfold everything inside');
+    });
+
+    it('does the same on Alt+click on the fold arrow', () => {
+      const tree = renderTree(NESTED);
+
+      toggle(tree, '$.a')?.dispatchEvent(new MouseEvent('click', { bubbles: true, altKey: true }));
+
+      expect(rowText(tree, '$.a.b.c.d')).toBe('"d": 1');
+      expect(branchOf(tree, '$.a').classList.contains('deep')).toBe(true);
+    });
+
+    it('switches back to ⇊ as soon as anything inside is folded again', () => {
+      const tree = renderTree(NESTED);
+      expandAll(tree, '$.a')?.click();
+
+      toggle(tree, '$.a.b.c')?.click();
+
+      expect(branchOf(tree, '$.a').classList.contains('deep')).toBe(false);
+      expect(branchOf(tree, '$.a.b').classList.contains('deep')).toBe(false);
+      expect(expandAll(tree, '$.a')?.getAttribute('aria-label')).toBe('Unfold everything inside');
+      expect(branchOf(tree, '$.a').classList.contains('collapsed')).toBe(false);
+    });
+
+    it('says on the fold arrow what Alt+click does', () => {
+      const tree = renderTree(NESTED);
+      expect(toggle(tree, '$.a')?.title).toBe('Click to unfold · Alt+click to unfold everything inside');
+
+      expandAll(tree, '$.a')?.click();
+      expect(toggle(tree, '$.a')?.title).toBe('Click to fold · Alt+click to fold everything inside');
+    });
+
+    it("keeps ⇊ out of the line's text, so copying a line copies only JSON", () => {
+      const tree = renderTree({ a: { b: 1 }, c: 1 }, { counts: false });
+      expect(expandAll(tree, '$.a')).not.toBeNull();
+      expect(rowText(tree, '$.a')).toBe('"a": { … },');
+    });
+  });
+
   describe('big objects and arrays', () => {
     it('draws children a page at a time with a "Show more" button', () => {
       const items = Array.from({ length: 1200 }, (_, i) => i);
@@ -179,6 +234,54 @@ describe('renderTree', () => {
       const tree = renderTree({ site: 'https://contoso.example' }, { links: false });
       expect(tree.querySelector('a')).toBeNull();
     });
+  });
+});
+
+describe('setExpandedDeep', () => {
+  const NESTED = { a: { b: { c: { d: 1 } } }, other: { x: { y: 1 } } };
+  const isFolded = (tree: HTMLElement, path: string) => branchOf(tree, path).classList.contains('collapsed');
+
+  it('unfolds every object and array inside, and nothing outside it', () => {
+    const tree = renderTree(NESTED);
+
+    setExpandedDeep(branchOf(tree, '$.a'), true);
+
+    expect(isFolded(tree, '$.a')).toBe(false);
+    expect(isFolded(tree, '$.a.b')).toBe(false);
+    expect(isFolded(tree, '$.a.b.c')).toBe(false);
+    expect(isFolded(tree, '$.other')).toBe(true);
+    expect(row(tree, '$.other.x')).toBeNull();
+  });
+
+  it('folds everything inside again', () => {
+    const tree = renderTree(NESTED);
+    setExpandedDeep(branchOf(tree, '$.a'), true);
+
+    setExpandedDeep(branchOf(tree, '$.a'), false);
+
+    expect(isFolded(tree, '$.a')).toBe(true);
+    expect(isFolded(tree, '$.a.b')).toBe(true);
+    expect(isFolded(tree, '$.a.b.c')).toBe(true);
+    expect(isFolded(tree, '$')).toBe(false);
+  });
+
+  it('still draws big arrays a page at a time', () => {
+    const tree = renderTree({ items: Array.from({ length: 1200 }, (_, i) => ({ tags: [i] })) });
+
+    setExpandedDeep(branchOf(tree, '$'), true);
+
+    expect(branchOf(tree, '$.items').querySelectorAll(':scope > .children > .branch').length).toBe(500);
+    expect(tree.querySelector('.more')?.textContent).toBe('Show 500 more (700 not shown)');
+    expect(isFolded(tree, '$.items[499].tags')).toBe(false);
+  });
+
+  it('unfolds lines drawn later by "Show more" all the way down', () => {
+    const tree = renderTree([{ a: { b: 1 } }, { a: { b: 2 } }, { a: { b: 3 } }], { pageSize: 2 });
+    setExpandedDeep(branchOf(tree, '$'), true);
+
+    tree.querySelector<HTMLButtonElement>('.more')?.click();
+
+    expect(rowText(tree, '$[2].a.b')).toBe('"b": 3');
   });
 });
 

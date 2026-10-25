@@ -6,6 +6,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 
 - 🌳 **Collapsible tree**: fold and unfold any object or array
 - 🪜 **Unfold to level**: unfold 1, 2 or 3 levels, or everything, with one click
+- ⏬ **Unfold everything inside**: open one object or array all the way down with ⇊ or Alt+click
 - 📄 **Raw / Tree toggle**: switch to the exact text the server sent, and back
 - 📋 **Copy value & path**: click any line to see its JSON path, and copy the path or the value
 - 🔗 **Clickable links**: web addresses in values open in a new tab
@@ -68,6 +69,10 @@ Objects and arrays fold and unfold with the ▸ / ▾ arrow. The first two level
 ### 🪜 Unfold to level
 
 The **Unfold 1 · 2 · 3 · All** buttons in the toolbar unfold every object and array down to that level and fold everything deeper, so they also fold the tree back up. **1** leaves only the top level open, and **All** unfolds everything. Big arrays still show 500 entries at a time, so **All** stays fast on large responses. The buttons are hidden in the raw view.
+
+### ⏬ Unfold everything inside
+
+Hover the first line of an object or array and a **⇊** button appears at its end. Click it to unfold that object or array and everything inside it, all the way down, without opening the rest of the response. The button then turns into **⇈**, which folds it all again. **Alt+click** on the ▸ / ▾ arrow does the same. As soon as you fold something inside by hand, the button goes back to ⇊. Big arrays still show 500 entries at a time.
 
 ### 📄 Raw / Tree toggle
 

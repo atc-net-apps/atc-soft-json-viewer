@@ -42,6 +42,12 @@ describe('enableSelection', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  it('does not select the line when its unfold-everything button is clicked', () => {
+    const { onSelect, row } = setup();
+    row('$.b').querySelector<HTMLButtonElement>('.expand-all')?.click();
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it('does not select the line when a link in it is clicked', () => {
     const { onSelect, row } = setup();
     const link = row('$.site').querySelector('a') as HTMLAnchorElement;
