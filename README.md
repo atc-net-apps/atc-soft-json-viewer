@@ -2,27 +2,37 @@
 
 A Chrome and Edge extension that turns raw JSON in the current tab into a readable, collapsible, colour-coded tree, with one click. Open source, no tracking, no network access.
 
-**Viewing**
+<p align="center">
+  <img src="docs/overview-dark.png" alt="ATC JSON Viewer showing an order as a colour-coded tree, dark theme" width="900">
+</p>
+
+**Reading JSON**
 
 - 🌳 **Collapsible tree**: fold and unfold any object or array
 - 🪜 **Unfold to level**: unfold 1, 2 or 3 levels, or everything, with one click
 - ⏬ **Unfold everything inside**: open one object or array all the way down with ⇊ or Alt+click
-- 🔍 **Search**: highlight matching keys and values, unfold where they are, and step through them with Enter
-- 🧭 **JSONPath query**: type `$.items[*].sku` in the search box to list just those values
-- 📄 **Raw / Tree toggle**: switch to the exact text the server sent, and back
-- 📑 **Table view**: see a list of objects as rows and columns
-- 🔤 **Sort keys A–Z**: show keys alphabetically, while Raw and copying keep the original order
-- 📋 **Copy value & path**: click any line to see its JSON path, and copy the path or the value
-- 🔗 **Clickable links**: web addresses in values open in a new tab
 - 🔢 **Item counts**: every object and array shows how many keys or items it has
+- 🔗 **Clickable links**: web addresses in values open in a new tab
 - 🕒 **Readable timestamps**: click a date or Unix time to see it as local time and "2 days ago"
 - 🔑 **JWT decoding**: see what is inside a JSON Web Token, decoded in your browser
-- 🎨 **Light, dark or system theme**: syntax colours that follow your system, or a theme you choose
 - 🔢 **Exact big numbers**: IDs beyond JavaScript's safe range are shown exactly as sent
 - ⚠️ **Invalid JSON pointer**: broken JSON shows what is wrong, with the broken line highlighted and a caret at the exact column
 - ⚡ **Large responses**: only what you unfold is drawn, and big arrays are shown 500 items at a time
-- 📊 **Status bar**: shows the response's content type and size
+
+**Finding things**
+
+- 🔍 **Search**: highlight matching keys and values, unfold where they are, and step through them with Enter
+- 🧭 **JSONPath query**: type `$.items[*].sku` in the search box to list just those values
+- 📑 **Table view**: see a list of objects as rows and columns
+- 🔤 **Sort keys A–Z**: show keys alphabetically, while Raw and copying keep the original order
+- 📋 **Copy value & path**: click any line to see its JSON path, and copy the path or the value
+
+**Working with the viewer**
+
+- 📄 **Raw / Tree toggle**: switch to the exact text the server sent, and back
+- 🎨 **Light, dark or system theme**: syntax colours that follow your system, or a theme you choose
 - ⌨️ **Keyboard navigation**: move through the tree, fold, unfold and search without the mouse
+- 📊 **Status bar**: shows the response's content type and size
 - ⚙️ **Settings page**: theme, font size, how pages open and which extras are shown, stored in this browser only
 
 **Privacy & security**
@@ -93,6 +103,10 @@ Type in the **Search keys and values** box in the toolbar. Every key and value c
 
 The search covers the whole response, including the parts that aren't drawn yet, such as entries behind **Show more**. Text is matched as the tree shows it: numbers as written, and strings without their quotes. After 10 000 matches the counter stops counting and shows **10,000+**. The search box is hidden in the raw view, where the browser's own **Ctrl+F** works.
 
+<p align="center">
+  <img src="docs/search-dark.png" alt="Search for sku: both matches highlighted, the current one in orange, 1 of 2" width="900">
+</p>
+
 ### 🧭 JSONPath query
 
 Type a [JSONPath](https://www.rfc-editor.org/rfc/rfc9535) query in the search box, starting with `$.` or `$[`, and a list under the toolbar shows every result with its path and value. The first result is selected in the tree, ready for **Copy path** or **Copy value**; **Enter**, **↓** and **↑** go through the others, or click one in the list.
@@ -108,6 +122,10 @@ Type a [JSONPath](https://www.rfc-editor.org/rfc/rfc9535) query in the search bo
 | `$..sku` | every `sku`, however deep |
 
 Filters (`[?@.price < 10]`), slices (`[0:2]`) and several selectors in one bracket (`[0,1]`) are not supported yet: the list says so and points at the spot. Text such as `$ref` is a normal search, because a query always continues with `.` or `[` after the `$`.
+
+<p align="center">
+  <img src="docs/jsonpath-dark.png" alt="JSONPath query $..href listing two results under the toolbar, the first selected in the tree" width="900">
+</p>
 
 ### 📄 Raw / Tree toggle
 
@@ -125,6 +143,10 @@ The **Raw** button in the toolbar's **Tree | Table | Raw** switch shows the resp
 - Big lists show 500 rows at a time, with a **Show more** button.
 
 The viewer remembers if you prefer the table, like it does for Raw.
+
+<p align="center">
+  <img src="docs/table-dark.png" alt="Table view of a list of orders, with sizes for nested items and striped cells for missing keys" width="900">
+</p>
 
 ### 🔤 Sort keys A–Z
 
@@ -162,6 +184,10 @@ Login tokens such as `"accessToken": "eyJhbGciOi…"` are JSON Web Tokens: two p
 
 The token is decoded in your browser and never sent anywhere. The signature is **not** verified, and the box says so: decoding shows what a token claims, not whether it is genuine.
 
+<p align="center">
+  <img src="docs/jwt-dark.png" alt="A decoded JSON Web Token under its line, with exp shown as local time" width="900">
+</p>
+
 ### ⌨️ Keyboard shortcuts
 
 The tree is ready for the keyboard as soon as a page is formatted, and it is a single **Tab** stop. The line you are on is selected, so the status bar shows its path and **Copy path** / **Copy value** work straight away.
@@ -185,6 +211,10 @@ With a screen reader, the tree reads as a tree: each line says its level and whe
 
 By default, colours follow your operating system's light or dark setting and switch instantly when it changes. The **Theme** button in the toolbar cycles through **System → Light → Dark**, and the viewer remembers your choice for every page.
 
+<p align="center">
+  <img src="docs/overview-light.png" alt="ATC JSON Viewer in the light theme" width="900">
+</p>
+
 ### 🔢 Exact big numbers
 
 JavaScript can only represent integers up to 9 007 199 254 740 991 exactly. Larger numbers, such as 64-bit IDs, are normally rounded without warning: `9007199254740993` would turn into `…992`. ATC JSON Viewer keeps the digits exactly as the server sent them.
@@ -194,6 +224,10 @@ JavaScript can only represent integers up to 9 007 199 254 740 991 exactly. Larg
 If the page claims to be JSON but isn't valid, the viewer explains the problem in plain English and gives the line and column, for example *"Line 5, column 38: Trailing comma: remove the last ","."*
 
 Below the message, the text around the error is shown with line numbers: the broken line is highlighted, the character where the problem starts is outlined, and a **^** points at it. You see the 10 lines before and after the error. Very long lines, as in minified JSON, are cut to the part around the error. The whole text is always one click away in the **Raw** view.
+
+<p align="center">
+  <img src="docs/invalid-json-dark.png" alt="Invalid JSON: the message, the broken line highlighted and a caret under the trailing comma" width="900">
+</p>
 
 ### 📊 Status bar
 
@@ -216,13 +250,29 @@ The theme, the view and A–Z are also remembered when you change them in the vi
 
 Settings are stored in this browser only, with `chrome.storage.local`. They never leave your computer, and no page content is ever stored.
 
+<p align="center">
+  <img src="docs/settings-dark.png" alt="The settings page: theme, font size, how pages open, and switches for links, counts, timestamps and JWT chips" width="900">
+</p>
+
 ### ⚡ Large responses
 
 Only the parts you unfold are built, and big arrays and objects show their first 500 entries with a **Show more** link. A 1 MB response with 5 000 items formats in a few milliseconds.
 
+## 🔒 Security & Privacy
+
+Nothing runs until you click: the extension has no content scripts and isn't loaded into the pages you visit. It makes no network requests, collects nothing, and only stores your settings, in this browser.
+
+| Permission | Why it's needed |
+|------------|-----------------|
+| `activeTab` | Access to the current tab, only after you click |
+| `scripting` | Lets the extension put the viewer into that tab |
+| `storage` | Saves your settings in this browser |
+
+None of them shows a warning when the extension is installed. [SECURITY.md](SECURITY.md) explains what the extension does and doesn't do, how to check it yourself, and how to report a vulnerability. [PRIVACY.md](PRIVACY.md) is the privacy policy.
+
 ## 🛠️ How We Develop
 
-The extension is written in TypeScript with [WXT](https://wxt.dev/), a framework for browser extensions. It has no runtime dependencies: everything in the built extension is our own code. The npm packages are build and test tools only.
+The extension is written in TypeScript with [WXT](https://wxt.dev/), a framework for browser extensions. It has no runtime dependencies: apart from a few lines from WXT that start each script, everything in the built extension is our own code. The npm packages are build and test tools only.
 
 ### Prerequisites
 
@@ -261,6 +311,7 @@ export default defineWebExtConfig({
 | `npm run zip` | Packs the release build into a `.zip` for the stores |
 | `npm run compile` | TypeScript type check |
 | `npm test` | Unit tests (Vitest) |
+| `npm run check:security` | Checks the release build: no network access, exactly three permissions (see [Security checks](#security-checks)) |
 | `npm run fixtures` | Local test server with sample responses (see [Sample responses](#sample-responses)) |
 
 ## 🧪 Local Testing
@@ -293,6 +344,30 @@ This starts a small local server at <http://localhost:5179/> that serves the fil
 
 With `npm run fixtures` and `npm run dev` running in two terminals, open each file and click the toolbar button.
 
+### Security checks
+
+```powershell
+npm run build
+npm run check:security
+```
+
+This checks the release build in `.output/chrome-mv3/` and fails if:
+
+- the code could reach the network (`fetch`, `XMLHttpRequest`, `WebSocket`, …), run text as code (`eval`) or turn text into HTML (`innerHTML`, …);
+- the manifest asks for anything but `activeTab`, `scripting` and `storage`, or lacks the strict policy for the extension's own pages;
+- a file contains characters Chrome would refuse to load.
+
+## 📚 Learning Resources
+
+- [Chrome: extensions get started](https://developer.chrome.com/docs/extensions/get-started) and [Edge: extensions overview](https://learn.microsoft.com/en-us/microsoft-edge/extensions/)
+- [Manifest V3](https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3) and the [manifest reference](https://developer.chrome.com/docs/extensions/reference/manifest)
+- [`activeTab`](https://developer.chrome.com/docs/extensions/develop/concepts/activeTab), [`chrome.scripting`](https://developer.chrome.com/docs/extensions/reference/api/scripting) and [permission warnings](https://developer.chrome.com/docs/extensions/develop/concepts/permission-warnings)
+- [Service workers](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers) and [content scripts](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts)
+- [MDN: Using shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM)
+- [WXT](https://wxt.dev/guide/introduction.html), [Vitest](https://vitest.dev/guide/) and [TypeScript in 5 minutes](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html)
+- [JSONPath (RFC 9535)](https://www.rfc-editor.org/rfc/rfc9535), [JSON Web Tokens (RFC 7519)](https://www.rfc-editor.org/rfc/rfc7519) and [problem details (RFC 9457)](https://www.rfc-editor.org/rfc/rfc9457)
+- [MDN: `Number.MAX_SAFE_INTEGER`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER), the limit behind exact big numbers
+
 ## 🏗️ Architecture
 
 - **Click to format**: the extension only acts on the tab you click, using Chrome's `activeTab` permission. It has no content scripts and no access to websites by default.
@@ -301,6 +376,7 @@ With `npm run fixtures` and `npm run dev` running in two terminals, open each fi
 - **Shadow DOM**: the viewer lives in a closed shadow root, so the page's styles can't affect it and its styles can't leak out. The stylesheet is attached through the CSSOM, so a strict Content-Security-Policy can't block it.
 - **Lazy tree**: children are built when first unfolded, and large arrays and objects are paged, so big responses stay fast.
 - **Safe rendering**: values from the page are always inserted as text, never as HTML.
+- **No network**: there is no code that could make a request, which `npm run check:security` verifies on the built extension.
 
 ## 🤝 How to contribute
 
