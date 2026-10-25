@@ -215,6 +215,43 @@ describe('renderTree', () => {
     });
   });
 
+  describe('timestamps', () => {
+    const ORDER = { placedAt: '2026-10-23T09:15:00Z', updatedAt: 1792745700, quantity: 1700000000, items: ['2026-10-23T09:15:00Z'] };
+    const value = (tree: HTMLElement, path: string) => row(tree, path)?.querySelector<HTMLElement>('.string, .number');
+
+    it('underlines dates and Unix times, and nothing else', () => {
+      const tree = renderTree(ORDER, { expandDepth: 2 });
+
+      expect(value(tree, '$.placedAt')?.classList.contains('timestamp')).toBe(true);
+      expect(value(tree, '$.updatedAt')?.classList.contains('timestamp')).toBe(true);
+      expect(value(tree, '$.items[0]')?.classList.contains('timestamp')).toBe(true);
+      expect(value(tree, '$.quantity')?.classList.contains('timestamp')).toBe(false);
+    });
+
+    it('shows the local time and how long ago when a time is clicked, and hides it on the next click', () => {
+      const tree = renderTree(ORDER);
+      const time = value(tree, '$.updatedAt') as HTMLElement;
+
+      time.click();
+      const info = row(tree, '$.updatedAt')?.querySelector('.timestamp-info');
+      expect(info?.textContent).toMatch(/2026.* · .+/);
+      expect(info?.previousElementSibling).toBe(time);
+
+      time.click();
+      expect(row(tree, '$.updatedAt')?.querySelector('.timestamp-info')).toBeNull();
+    });
+
+    it('keeps the value itself unchanged', () => {
+      const tree = renderTree(ORDER);
+      expect(rowText(tree, '$.placedAt')).toBe('"placedAt": "2026-10-23T09:15:00Z",');
+    });
+
+    it('underlines no times when they are switched off', () => {
+      const tree = renderTree(ORDER, { timestamps: false });
+      expect(tree.querySelector('.timestamp')).toBeNull();
+    });
+  });
+
   describe('links', () => {
     it('turns http and https addresses into links that open in a new tab', () => {
       const tree = renderTree({ site: 'https://contoso.example/about', api: 'http://localhost:5179/orders.json' });

@@ -1,6 +1,7 @@
 import { BigNumber } from '../parse';
 import { childPath, ROOT_PATH } from '../path';
 import { type Key, searchPattern } from '../search';
+import { describeTimestamp, timestampFrom } from '../timestamps';
 
 export interface TreeOptions {
   /** How many levels are unfolded at first: 0 = all folded, 1 = only the top level open. */
@@ -13,6 +14,8 @@ export interface TreeOptions {
   counts?: boolean;
   /** Highlight this text in keys and values (case-insensitive). */
   search?: string;
+  /** Underline dates and Unix times; clicking one shows it as local time. */
+  timestamps?: boolean;
 }
 
 /** One tree's options. Lines drawn later read them too, so changing them affects what is drawn next. */
@@ -28,7 +31,14 @@ interface Branch {
   options: TreeState;
 }
 
-const DEFAULTS: Required<TreeOptions> = { expandDepth: 1, pageSize: 500, links: true, counts: true, search: '' };
+const DEFAULTS: Required<TreeOptions> = {
+  expandDepth: 1,
+  pageSize: 500,
+  links: true,
+  counts: true,
+  search: '',
+  timestamps: true,
+};
 
 // The elements that show a key or a value, which search highlights.
 const SEARCHABLE = '.key, .string, .number, .boolean, .null';
@@ -43,6 +53,8 @@ const branches = new WeakMap<Element, Branch>();
 const rowValues = new WeakMap<Element, unknown>();
 // Each tree's options, for changes after it is drawn.
 const trees = new WeakMap<Element, TreeState>();
+// The moment each underlined time stands for, in milliseconds since 1970.
+const times = new WeakMap<Element, number>();
 
 /**
  * Draws a JSON value as a collapsible tree.
@@ -229,6 +241,12 @@ function applyLevel(branchElement: Element, level: number): void {
 function onClick(event: MouseEvent): void {
   const target = event.target as Element;
 
+  // A time: show or hide it as local time. The line is still selected, as for any click on it.
+  const time = target.closest('.timestamp');
+  if (time) {
+    toggleTime(time);
+  }
+
   // The ⇊ / ⇈ button, or Alt+click on the fold arrow: everything inside at once.
   const expandAll = target.closest('.expand-all') ?? (event.altKey ? target.closest('.toggle') : null);
   if (expandAll) {
@@ -278,7 +296,7 @@ function renderEntry(
   const row = createRow(path, depth);
   rowValues.set(row, value);
   appendKey(row, key);
-  row.append(renderPrimitive(value, options));
+  row.append(renderPrimitive(value, key, options));
   if (!isLast) {
     row.append(span('punctuation', ','));
   }
@@ -404,7 +422,31 @@ function renderNextPage(branchElement: Element, branch: Branch): void {
   }
 }
 
-function renderPrimitive(value: unknown, options: TreeState): HTMLElement {
+function renderPrimitive(value: unknown, key: Key | null, options: TreeState): HTMLElement {
+  const element = renderPlain(value, options);
+  const time = options.timestamps ? timestampFrom(value, key) : null;
+  if (time !== null) {
+    element.classList.add('timestamp');
+    element.title = 'A time: click to show it as local time';
+    times.set(element, time);
+  }
+  return element;
+}
+
+/** "25 Oct 2026, 11:15:00 · 2 days ago" after a time, or hides it again. Worked out when clicked, so "ago" is current. */
+function toggleTime(element: Element): void {
+  const shown = element.nextElementSibling;
+  if (shown?.classList.contains('timestamp-info')) {
+    shown.remove();
+    return;
+  }
+  const time = times.get(element);
+  if (time !== undefined) {
+    element.after(span('timestamp-info', describeTimestamp(time)));
+  }
+}
+
+function renderPlain(value: unknown, options: TreeState): HTMLElement {
   if (value instanceof BigNumber) {
     const element = span('number big-number', value.source);
     element.title = 'Exact value as sent. It is larger than a normal JavaScript number can hold.';

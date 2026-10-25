@@ -14,6 +14,7 @@ A Chrome and Edge extension that turns raw JSON in the current tab into a readab
 - 📋 **Copy value & path**: click any line to see its JSON path, and copy the path or the value
 - 🔗 **Clickable links**: web addresses in values open in a new tab
 - 🔢 **Item counts**: every object and array shows how many keys or items it has
+- 🕒 **Readable timestamps**: click a date or Unix time to see it as local time and "2 days ago"
 - 🎨 **Light, dark or system theme**: syntax colours that follow your system, or a theme you choose
 - 🔢 **Exact big numbers**: IDs beyond JavaScript's safe range are shown exactly as sent
 - ⚠️ **Invalid JSON pointer**: broken JSON shows what is wrong, with the broken line highlighted and a caret at the exact column
@@ -138,6 +139,13 @@ Values that are a web address (`http://` or `https://`) are underlined and open 
 ### 🔢 Item counts
 
 The first line of every object and array ends with a small count, such as **3 items** or **5 keys**, whether it is folded or unfolded. You can see how big a part of the response is without unfolding it.
+
+### 🕒 Readable timestamps
+
+Dates and Unix times have a dotted underline. Click one to see it in your local time zone, followed by how long ago (or how far ahead) it is, for example **23 Oct 2026, 10:55:00 · 2 days ago**. Click again to hide it. The date follows your browser's language; the value itself is never changed.
+
+- **Text** counts when it is an ISO date with a time, such as `2026-10-23T09:15:00Z`. A date on its own, such as `2026-10-23`, is a day rather than a moment, so it isn't underlined.
+- **Numbers** count only when the key looks like a time (ending in `At`, `_at`, `Time`, `_time`, `Date` or `_date`, or exactly `timestamp`, `ts`, `exp`, `iat`, `nbf`, `time` or `date`) and they have 10 digits (Unix seconds) or 13 digits (milliseconds). So `"updatedAt": 1792745700` is a time, but `"quantity": 1700000000` is not.
 
 ### 🎨 Light and dark
 

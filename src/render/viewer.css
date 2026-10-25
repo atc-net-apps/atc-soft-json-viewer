@@ -436,6 +436,24 @@ mark.current {
   color: var(--syntax-number);
 }
 
+/* Dates and Unix times: click to see them as local time. */
+.timestamp {
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, currentColor 60%, transparent);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+.timestamp-info {
+  margin-left: 0.8em;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--fg);
+  font: 500 0.85em var(--font-ui);
+  white-space: nowrap;
+}
+
 .boolean {
   color: var(--syntax-boolean);
 }

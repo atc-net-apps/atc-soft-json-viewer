@@ -65,6 +65,15 @@ describe('toggleViewer', () => {
     expect(getMountedRoot()?.querySelector('.count')).toBeNull();
   });
 
+  it('underlines no times when the stored settings switch them off', async () => {
+    await saveSettings({ timestamps: false });
+    page('<pre>{"placedAt": "2026-10-23T09:15:00Z"}</pre>');
+
+    await toggleViewer(document, 'application/json');
+
+    expect(getMountedRoot()?.querySelector('.timestamp')).toBeNull();
+  });
+
   it('uses the stored unfold depth and font size', async () => {
     await saveSettings({ unfoldDepth: 3, fontSize: 16 });
     page(JSON_PAGE);

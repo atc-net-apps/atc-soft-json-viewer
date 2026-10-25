@@ -157,6 +157,7 @@ function render(host: HTMLElement, root: ShadowRoot, text: string, contentType: 
         expandDepth: settings.unfoldDepth,
         links: settings.links,
         counts: settings.counts,
+        timestamps: settings.timestamps,
       });
       selection = enableSelection(tree, (row) => {
         selected = row;
