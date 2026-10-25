@@ -4,7 +4,7 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   // auto-icons generates the 16, 32, 48 and 128 px icons from assets/icon.png (grey in dev builds).
   modules: ['@wxt-dev/auto-icons'],
-  manifest: {
+  manifest: ({ command }) => ({
     name: 'ATC JSON Viewer',
     description:
       'Formats JSON in the current tab with one click. Open source, no tracking, no network access.',
@@ -23,5 +23,20 @@ export default defineConfig({
         },
       },
     },
-  },
+    // The extension's own pages (the service worker and the settings page) may only run the
+    // extension's own scripts and can't connect anywhere. Not for `npm run dev`, whose live reload
+    // needs a connection to the dev server. This doesn't cover the viewer inside a web page; see SECURITY.md.
+    ...(command === 'build' && {
+      content_security_policy: {
+        extension_pages: "script-src 'self'; object-src 'self'; connect-src 'none'",
+      },
+    }),
+  }),
+  vite: () => ({
+    build: {
+      // Vite adds a small fetch()-based loader to HTML pages for browsers without module preloading.
+      // Chrome and Edge have it built in, and the shipped code must not contain fetch at all.
+      modulePreload: { polyfill: false },
+    },
+  }),
 });

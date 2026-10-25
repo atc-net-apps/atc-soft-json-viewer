@@ -15,6 +15,7 @@
     "zip": "wxt zip",
     "compile": "tsc --noEmit",
     "test": "vitest run",
+    "check:security": "node scripts/check-no-network.mjs && node scripts/check-manifest.mjs",
     "fixtures": "node scripts/serve-fixtures.mjs",
     "postinstall": "wxt prepare"
   },
